@@ -141,105 +141,164 @@
     <!-- TAB 1: OVERVIEW -->
     {#if activeTab === 0}
     <main class="tab-content" in:fly={{y: 20, duration: 600}}>
-        <div class="grid-2">
+        <div class="dashboard-layout">
             
+            <!-- Section 1: Genesis & The Dataset -->
             <div class="obsidian-panel">
-                <h2 class="panel-header">System Architecture</h2>
-                <p style="color:#b0929c; margin-bottom: 2rem; font-weight: 300;">
-                    Pandora is powered by a fusion of classical linguistic feature extraction and deep neural representations. We don't just count words; we understand context.
+                <h2 class="panel-header">1. Project Genesis & The Dataset</h2>
+                <p class="narrative-text">
+                    The core objective of the <strong>Pandora Emotion Engine</strong> is to predict a subject's Extraversion Quotient (EQ) strictly from raw, unstructured text. This eliminates the biases of traditional self-reported psychological surveys.
+                </p>
+                <div class="data-row">
+                    <span class="data-label">Primary Source</span>
+                    <span class="data-value">Hugging Face (bhadresh-savani/explore-emotion)</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Volume</span>
+                    <span class="data-value">Tens of thousands of labeled records</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Preprocessing Pipeline</span>
+                    <span class="data-value">Tokenization, Lemmatization, Punctuation Scrubbing</span>
+                </div>
+                <p class="narrative-text" style="margin-top: 1.5rem;">
+                    We transformed the raw emotional classifications into a continuous Extraversion spectrum mapping by utilizing proven psychological frameworks, translating sparse labels into a dense numerical target (0 to 99).
+                </p>
+            </div>
+
+            <!-- Section 2: Feature Engineering (Classical) -->
+            <div class="obsidian-panel">
+                <h2 class="panel-header">2. Feature Engineering (The Classical Era)</h2>
+                <p class="narrative-text">
+                    Before leaping into deep learning, we established a robust baseline. We hypothesized that Extraversion leaves specific linguistic footprints:
                 </p>
                 
-                <div class="data-row">
-                    <span class="data-label">Lexical Traces (TF-IDF)</span>
-                    <span class="data-value">2,000 Dimensions</span>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div class="feature-card">
+                        <div class="feature-title">Lexical Traces</div>
+                        <div class="feature-desc">TF-IDF Vectorization projecting text into a 2,000-dimensional sparse space.</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-title">Affect Lexicon</div>
+                        <div class="feature-desc">The NRC Lexicon extracts 10 precise emotional vectors (Joy, Trust, Fear, Surprise, Sadness, Disgust, Anger, Anticipation, Positive, Negative).</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-title">Structural Syntax</div>
+                        <div class="feature-desc">Part-of-Speech tagging measures the ratio of Nouns and Verbs, capturing interaction styles.</div>
+                    </div>
                 </div>
-                <div class="data-row">
-                    <span class="data-label">Affect Lexicon (NRC)</span>
-                    <span class="data-value">10 Emotional Vectors</span>
-                </div>
-                <div class="data-row">
-                    <span class="data-label">Structural Syntax</span>
-                    <span class="data-value">Morphological Ratios</span>
-                </div>
+
                 <div class="data-row" style="border-bottom: none;">
-                    <span class="data-label" style="color: #ff2a6d; font-weight: 500;">Neural Abstraction (BERT)</span>
-                    <span class="data-value" style="color: #ff2a6d;">768 Contextual Dimensions</span>
+                    <span class="data-label" style="color: #b0929c;">Baseline Model (Ridge Regression)</span>
+                    <span class="data-value" style="color: #5e4652; font-size: 1.1rem;">R² 0.103</span>
                 </div>
+                <p class="narrative-text" style="font-size: 0.85rem; font-style: italic;">
+                    While statistically significant, classical linear models struggled to capture the non-linear, contextual nuance of human emotion. We needed a heavier weapon.
+                </p>
+            </div>
+
+            <!-- Section 3: Feature Fusion (Hybrid) -->
+            <div class="obsidian-panel">
+                <h2 class="panel-header">3. Feature Fusion (The Hybrid Approach)</h2>
+                <p class="narrative-text">
+                    We advanced to ensemble tree methods. To feed these models, we pioneered a "Feature Fusion" approach:
+                </p>
+                <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 4px; border: 1px dashed rgba(212,175,55,0.3); margin-bottom: 2rem; text-align: center;">
+                    <span style="color: #d4af37; font-family: 'Cinzel'; font-weight: 700;">[ TF-IDF + NRC + POS ]</span>
+                    <span style="color: #fff; margin: 0 1rem;">⊕</span>
+                    <span style="color: #ff2a6d; font-family: 'Cinzel'; font-weight: 700;">[ 768-Dim Frozen BERT Embeddings ]</span>
+                </div>
+
+                <div class="svg-visualization" style="margin-bottom: 1rem;">
+                    <svg viewBox="0 0 400 90" width="100%" height="90" xmlns="http://www.w3.org/2000/svg">
+                        <text x="10" y="30" fill="#b0929c" font-size="12" font-family="Cinzel">XGBoost</text>
+                        <rect x="130" y="20" width="120" height="12" fill="#8a2be2" rx="2"/>
+                        <text x="260" y="30" fill="#e8d5db" font-size="12" font-family="Inter">R² 0.158</text>
+
+                        <text x="10" y="70" fill="#b0929c" font-size="12" font-family="Cinzel">Random Forest</text>
+                        <rect x="130" y="60" width="125" height="12" fill="#d4af37" rx="2" />
+                        <text x="265" y="70" fill="#e8d5db" font-size="12" font-family="Inter">R² 0.162</text>
+                    </svg>
+                </div>
+                <p class="narrative-text">
+                    By feeding context-aware embeddings alongside classical features into non-linear decision trees, we achieved a <strong>50% improvement</strong> over the baseline. However, freezing the BERT layers limited its potential.
+                </p>
+            </div>
+
+            <!-- Section 4: Deep Learning Zenith -->
+            <div class="obsidian-panel">
+                <h2 class="panel-header" style="color: #ff2a6d;">4. The Zenith: Fine-Tuned BERT</h2>
+                <p class="narrative-text">
+                    We abandoned feature extraction entirely. Instead, we constructed an end-to-end differentiable neural architecture. The entire BERT model was unfrozen and allowed to propagate gradients directly from the psychological target variable back to its core attention mechanisms.
+                </p>
                 
-                <!-- End-to-End Pipeline Agentic Flow -->
-                <div style="margin-top: 2rem;">
-                    <h3 style="color:#d4af37; font-size: 0.9rem; font-family:'Cinzel', serif; letter-spacing:0.1em; margin-bottom: 1rem;">The End-to-End Pipeline</h3>
+                <!-- The existing pipeline SVG -->
+                <div style="margin: 3rem 0;">
                     <svg viewBox="0 0 430 120" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-                        <!-- User Input Node -->
                         <rect x="0" y="45" width="80" height="30" rx="4" fill="rgba(255,255,255,0.05)" stroke="#b0929c" />
                         <text x="40" y="64" fill="#e8d5db" font-size="10" font-family="Inter" text-anchor="middle">Input Text</text>
-                        <!-- Arrow -->
                         <line x1="85" y1="60" x2="115" y2="60" stroke="#d4af37" stroke-dasharray="2,2" />
                         <polygon points="115,57 122,60 115,63" fill="#d4af37" />
                         
-                        <!-- BERT Node -->
                         <rect x="125" y="40" width="100" height="40" rx="4" fill="rgba(255,42,109,0.1)" stroke="#ff2a6d" filter="url(#sigil-glow)" />
                         <text x="175" y="58" fill="#ff2a6d" font-size="11" font-weight="bold" font-family="Inter" text-anchor="middle">BERT Encoders</text>
                         <text x="175" y="72" fill="#b0929c" font-size="8" font-family="Inter" text-anchor="middle">12 Transformer Layers</text>
-                        <!-- Arrow -->
+                        
                         <line x1="230" y1="60" x2="260" y2="60" stroke="#ff2a6d" />
                         <polygon points="260,57 267,60 260,63" fill="#ff2a6d" />
                         
-                        <!-- Regression Head Node -->
                         <rect x="270" y="40" width="100" height="40" rx="4" fill="rgba(212,175,55,0.1)" stroke="#d4af37" />
                         <text x="320" y="58" fill="#d4af37" font-size="11" font-weight="bold" font-family="Inter" text-anchor="middle">Regression Head</text>
-                        <text x="320" y="72" fill="#b0929c" font-size="8" font-family="Inter" text-anchor="middle">Dropout + Linear(1)</text>
-                        <!-- Arrow -->
+                        <text x="320" y="72" fill="#b0929c" font-size="8" font-family="Inter" text-anchor="middle">Dropout(0.3) → Linear(1)</text>
+                        
                         <line x1="375" y1="60" x2="390" y2="60" stroke="#d4af37" />
                         <polygon points="390,57 397,60 390,63" fill="#d4af37" />
                         
-                        <!-- Output -->
                         <circle cx="410" cy="60" r="12" fill="#d4af37" filter="url(#sigil-glow)" />
                         <text x="410" y="64" fill="#000" font-size="10" font-weight="bold" font-family="Inter" text-anchor="middle">EQ</text>
                     </svg>
                 </div>
 
+                <div class="data-row" style="border-bottom: none;">
+                    <span class="data-label" style="color: #ff2a6d; font-weight: bold;">Fine-Tuned BERT Performance</span>
+                    <span class="data-value" style="color: #ff2a6d; font-size: 1.3rem; font-weight: 900; filter: drop-shadow(0 0 10px rgba(255,42,109,0.5));">R² 0.311</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Test Set Error</span>
+                    <span class="data-value">RMSE: 25.59 | MAE: 19.83</span>
+                </div>
+                
+                <p class="narrative-text" style="margin-top: 1.5rem;">
+                    The architecture utilizes a final Sigmoid activation scaled by 99 to strictly bound predictions within the psychological test continuum. It absolutely crushed all classical baselines, setting the new State-of-the-Art for our system.
+                </p>
             </div>
 
+            <!-- Section 5: XAI & Deployment -->
             <div class="obsidian-panel">
-                <h2 class="panel-header">The Stress Test</h2>
-                <p style="color:#b0929c; margin-bottom: 2rem; font-weight: 300;">
-                    Rigorous evaluation against 3,210 unseen human records. End-to-end deep learning redefines the ceiling.
+                <h2 class="panel-header">5. Explainability & Architecture</h2>
+                <p class="narrative-text">
+                    A black box model is useless in psychology. To establish trust, we integrated <strong>SHAP (SHapley Additive exPlanations)</strong> into the live inference pipeline. 
                 </p>
-
-                <!-- Custom SVG Performance Bar Chart -->
-                <div class="svg-visualization" style="margin-bottom: 2rem;">
-                    <svg viewBox="0 0 400 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">
-                        <text x="10" y="30" fill="#b0929c" font-size="12" font-family="Cinzel">Ridge (Baseline)</text>
-                        <rect x="130" y="20" width="80" height="12" fill="#5e4652" rx="2"/>
-                        <text x="220" y="30" fill="#e8d5db" font-size="12" font-family="Inter">R² 0.103</text>
-
-                        <text x="10" y="75" fill="#b0929c" font-size="12" font-family="Cinzel">XGBoost (Fusion)</text>
-                        <rect x="130" y="65" width="120" height="12" fill="#8a2be2" rx="2"/>
-                        <text x="260" y="75" fill="#e8d5db" font-size="12" font-family="Inter">R² 0.158</text>
-
-                        <text x="10" y="120" fill="#b0929c" font-size="12" font-family="Cinzel">Random Forest</text>
-                        <rect x="130" y="110" width="125" height="12" fill="#d4af37" rx="2" />
-                        <text x="265" y="120" fill="#e8d5db" font-size="12" font-family="Inter">R² 0.162</text>
-                        
-                        <text x="10" y="165" fill="#ff2a6d" font-size="12" font-weight="bold" font-family="Cinzel">Fine-Tuned BERT ★</text>
-                        <rect x="130" y="155" width="240" height="12" fill="url(#goldGrad)" rx="2" filter="url(#sigil-glow)"/>
-                        <text x="380" y="165" fill="#ff2a6d" font-size="12" font-weight="bold" font-family="Inter">R² 0.311</text>
-
-                        <defs>
-                            <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stop-color="#ff2a6d" />
-                                <stop offset="100%" stop-color="#d4af37" />
-                            </linearGradient>
-                        </defs>
-                    </svg>
+                <div style="background: rgba(17,34,64,0.4); padding: 1.5rem; border-left: 4px solid #00e5ff; margin-bottom: 2rem;">
+                    <p style="color: #e8d5db; font-size: 0.95rem; line-height: 1.6; font-family: 'Inter';">
+                        SHAP calculates the exact marginal contribution of every single token in the input string towards the final Extraversion score. By color-coding these attributions (Green = Positive EQ influence, Red = Negative EQ influence), we provide full transparency into the model's psychological reasoning.
+                    </p>
                 </div>
 
                 <div class="data-row">
-                    <span class="data-label">Test Evaluation Set</span>
-                    <span class="data-value">RMSE: 25.59 | MAE: 19.83</span>
+                    <span class="data-label">Backend Deployment</span>
+                    <span class="data-value">FastAPI + Docker + Redis + NGINX</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Caching Layer</span>
+                    <span class="data-value">MD5 Hashing + Bloom Filter + Redis</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Frontend Framework</span>
+                    <span class="data-value">SvelteKit + Vercel</span>
                 </div>
             </div>
+
         </div>
     </main>
     {/if}
@@ -517,6 +576,43 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 3rem;
+    }
+    .dashboard-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 2.5rem;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    .narrative-text {
+        color: #b0929c; 
+        margin-bottom: 2rem; 
+        font-weight: 300; 
+        line-height: 1.8;
+        font-size: 1.05rem;
+    }
+    .feature-card {
+        background: rgba(0,0,0,0.4);
+        border: 1px solid rgba(212,175,55,0.2);
+        padding: 1.5rem;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+    .feature-card:hover {
+        border-color: #d4af37;
+        box-shadow: 0 5px 15px rgba(212,175,55,0.1);
+    }
+    .feature-title {
+        color: #d4af37;
+        font-family: 'Cinzel', serif;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    .feature-desc {
+        color: #e8d5db;
+        font-size: 0.9rem;
+        font-weight: 300;
+        line-height: 1.5;
     }
     .grid-live-demo {
         grid-template-columns: 1.5fr 1fr;
