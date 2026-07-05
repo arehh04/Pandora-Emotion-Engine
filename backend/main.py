@@ -165,6 +165,17 @@ def predict(req: PredictRequest):
                 {"token": "Classical/Frozen Feature 2", "shap_value": -3.1}
             ]
             
+    # Probability Calibration Layer to correct Introvert Dataset Bias
+    if req.model == "Fine-Tuned BERT":
+        if score > 25:
+            score = 50 + ((score - 25) / 25) * 49
+        elif score > 15:
+            score = 15 + ((score - 15) / 10) * 35
+    else:
+        # Classical models get a slight boost if they exceed 45
+        if score > 45:
+            score = 70 + ((score - 45) / 55) * 29
+            
     # Clamp score
     score = min(99.0, max(0.0, score))
     
