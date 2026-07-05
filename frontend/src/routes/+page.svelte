@@ -169,7 +169,7 @@
                 <!-- End-to-End Pipeline Agentic Flow -->
                 <div style="margin-top: 2rem;">
                     <h3 style="color:#d4af37; font-size: 0.9rem; font-family:'Cinzel', serif; letter-spacing:0.1em; margin-bottom: 1rem;">The End-to-End Pipeline</h3>
-                    <svg viewBox="0 0 400 120" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                    <svg viewBox="0 0 430 120" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                         <!-- User Input Node -->
                         <rect x="0" y="45" width="80" height="30" rx="4" fill="rgba(255,255,255,0.05)" stroke="#b0929c" />
                         <text x="40" y="64" fill="#e8d5db" font-size="10" font-family="Inter" text-anchor="middle">Input Text</text>
