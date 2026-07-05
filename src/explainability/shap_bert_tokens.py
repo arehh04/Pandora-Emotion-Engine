@@ -50,8 +50,7 @@ def explain_text(text: str, model, tokenizer, device: str = "cpu",
     masker   = shap.maskers.Text(tokenizer)
     explainer = shap.Explainer(
         lambda texts: _bert_predict_fn(texts, model, tokenizer, device),
-        masker,
-        output_names=["Extraversion Score"]
+        masker
     )
 
     shap_values = explainer([text], batch_size=1, fixed_context=1)

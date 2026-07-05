@@ -89,6 +89,10 @@ def load_models():
 
     print("API ready to serve requests.")
 
+@app.get("/")
+def read_root():
+    return {"status": "Pandora API is running successfully on Hugging Face Spaces!"}
+
 @app.post("/predict")
 def predict(req: PredictRequest):
     text = req.text
