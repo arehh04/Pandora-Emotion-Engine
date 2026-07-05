@@ -151,8 +151,12 @@ def predict(req: PredictRequest):
             X_final = np.hstack((X_classical, emb))
             
             if req.model == "XGBoost":
+                if pkg.get('xgb') is None:
+                    return {"error": "XGBoost model is not currently available on the server."}
                 score = float(pkg['xgb'].predict(X_final)[0])
             elif req.model == "Random Forest":
+                if pkg.get('rf') is None:
+                    return {"error": "Random Forest model is not currently available on the server."}
                 score = float(pkg['rf'].predict(X_final)[0])
                 
             # Dummy SHAP for ML models (since we don't have a fast TreeExplainer setup here for a single sample)

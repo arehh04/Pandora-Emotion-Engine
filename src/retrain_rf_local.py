@@ -2,10 +2,10 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
-import xgboost as xgb
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import root_mean_squared_error, r2_score
 
-def retrain_xgboost_locally():
+def retrain_rf_locally():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     data_dir = os.path.join(base_dir, "data")
     models_dir = os.path.join(base_dir, "models")
@@ -26,37 +26,32 @@ def retrain_xgboost_locally():
     X_test = np.hstack((X_test_class, X_test_bert))
     
     print(f"Training Data Shape: {X_train.shape}")
-    print("Retraining XGBoost locally using the optimal Colab parameters...")
+    print("Training Random Forest locally...")
     
-    # Exact best params from Colab
-    model = xgb.XGBRegressor(
-        n_estimators=200,
-        max_depth=10,
-        learning_rate=0.05,
-        subsample=0.8,
-        colsample_bytree=0.8,
+    # Standard sensible parameters for a quick Random Forest
+    model = RandomForestRegressor(
+        n_estimators=100,
+        max_depth=20,
+        min_samples_split=5,
         random_state=42,
         n_jobs=-1
     )
     
     model.fit(X_train, y_train)
     
-    print("Evaluating local model...")
+    print("Evaluating local Random Forest model...")
     preds = model.predict(X_test)
     rmse = root_mean_squared_error(y_test, preds)
     r2 = r2_score(y_test, preds)
     
-    print(f"Local XGBoost Test RMSE: {rmse:.4f}")
-    print(f"Local XGBoost Test R2: {r2:.4f}")
+    print(f"Local RF Test RMSE: {rmse:.4f}")
+    print(f"Local RF Test R2: {r2:.4f}")
     
     # Save the model locally so it is Windows-compatible
-    model_path = os.path.join(models_dir, "advanced_xgboost_model_local.pkl")
+    model_path = os.path.join(models_dir, "random_forest_model_local.pkl")
     joblib.dump(model, model_path)
     
-    # Also save in native JSON format for safety
-    model.save_model(os.path.join(models_dir, "advanced_xgboost_model_local.json"))
-    
-    print("Model successfully saved locally! OS-compatibility issue resolved.")
+    print("Random Forest model successfully saved locally!")
 
 if __name__ == "__main__":
-    retrain_xgboost_locally()
+    retrain_rf_locally()
