@@ -248,7 +248,7 @@
     {#if activeTab === 1}
     <main class="tab-content" in:fly={{y: 20, duration: 600}}>
         
-        <div class="grid-2" style="grid-template-columns: 1.5fr 1fr;">
+        <div class="grid-2 grid-live-demo">
             
             <div class="obsidian-panel">
                 <h2 class="panel-header">Text Input</h2>
@@ -518,8 +518,13 @@
         grid-template-columns: 1fr 1fr;
         gap: 3rem;
     }
+    .grid-live-demo {
+        grid-template-columns: 1.5fr 1fr;
+    }
     @media (max-width: 900px) {
-        .grid-2 { grid-template-columns: 1fr; gap: 2rem; }
+        .grid-2, .grid-live-demo { grid-template-columns: 1fr; gap: 2rem; }
+        .obsidian-panel { padding: 1.5rem !important; }
+        .container { padding: 1rem; }
     }
 
     .obsidian-panel {
@@ -687,8 +692,13 @@
         gap: 3rem;
     }
     @media (max-width: 768px) {
-        .diagnosis-container { grid-template-columns: 1fr; }
-        #exportable-area { padding: 1.5rem; }
+        .diagnosis-container { grid-template-columns: 1fr; gap: 2rem; }
+        #exportable-area { padding: 1.2rem; }
+        .nav-ritual { gap: 1rem; flex-wrap: wrap; text-align: center; }
+        .score-value { font-size: 4rem; }
+        .pandora-subtitle { font-size: 0.8rem; letter-spacing: 0.2em; text-align: center; }
+        .action-container { flex-direction: column; align-items: center; }
+        .panel-header { font-size: 1.2rem; }
     }
 
     .score-display {
