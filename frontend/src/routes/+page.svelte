@@ -104,8 +104,8 @@
     // Helper for color intensity in SHAP tokens
     function getShapColor(val: number, maxVal: number) {
         const intensity = Math.min(255, Math.floor(Math.abs(val) / (maxVal + 1e-8) * 255));
-        if (val >= 0) return { bg: `rgba(0, ${intensity}, 100, 0.4)`, border: `rgba(0,229,100,0.6)` };
-        return { bg: `rgba(${intensity}, 0, 0, 0.4)`, border: `rgba(255,80,80,0.6)` };
+        if (val >= 0) return { bg: `rgba(0, 230, 118, ${0.1 + (intensity/255)*0.3})`, border: `rgba(0, 230, 118, ${0.4 + (intensity/255)*0.6})` };
+        return { bg: `rgba(255, 82, 82, ${0.1 + (intensity/255)*0.3})`, border: `rgba(255, 82, 82, ${0.4 + (intensity/255)*0.6})` };
     }
 
 </script>
@@ -430,25 +430,28 @@
             </div>
 
             <!-- Dynamic SHAP Waterfall / Tokens -->
-            <div style="margin-top: 3rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 2rem;">
-                <div style="text-align: center; font-family:'Cinzel', serif; color:#d4af37; font-size: 1.2rem; margin-bottom: 2rem;">
-                    ⚖️ The Balance of Influence (SHAP Attributions)
+            <div class="shap-container">
+                <div class="shap-title">
+                    <svg style="width:18px; height:18px; fill:#00e5ff; margin-right:10px;" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                    AI Decision Trace (SHAP)
                 </div>
                 
-                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; max-width: 800px; margin: 0 auto;">
+                <div class="shap-tokens-wrapper">
                     {#if analysisResult.shap_tokens}
                         {#each analysisResult.shap_tokens as token}
                             {@const color = getShapColor(token.shap_value, Math.max(...analysisResult.shap_tokens.map((t: any) => Math.abs(t.shap_value))))}
-                            <span 
-                                title="SHAP: {token.shap_value.toFixed(4)}" 
-                                style="background:{color.bg}; border:1px solid {color.border}; border-radius:4px; padding:4px 8px; display:inline-block; font-family:monospace; font-size:1rem; color:#E6F1FF;">
-                                {token.token} <span style="font-size: 0.7rem; opacity: 0.7; margin-left: 4px;">({token.shap_value > 0 ? '+' : ''}{token.shap_value.toFixed(2)})</span>
+                            <span class="shap-pill" title="SHAP: {token.shap_value.toFixed(4)}" 
+                                  style="background: linear-gradient(135deg, {color.bg}, rgba(0,0,0,0.2)); border:1px solid {color.border}; box-shadow: 0 4px 15px {color.bg};">
+                                <span class="shap-token-text">{token.token}</span>
+                                <span class="shap-value-text" style="color: {token.shap_value > 0 ? '#00e676' : '#ff5252'}">
+                                    {token.shap_value > 0 ? '+' : ''}{token.shap_value.toFixed(2)}
+                                </span>
                             </span>
                         {/each}
                     {/if}
                 </div>
-                <div style="text-align: center; margin-top: 1rem; color: #b0929c; font-size: 0.85rem; font-style: italic;">
-                    Hover over tokens to see exact SHAP values. Green increases Extraversion, Red decreases it.
+                <div class="shap-footer">
+                    Tokens are ordered by influence. Green pushes the EQ score higher, Red pushes it lower.
                 </div>
             </div>
         </div> <!-- /exportable-area -->
@@ -730,8 +733,8 @@
     .modal-overlay {
         position: fixed;
         top: 0; left: 0; width: 100vw; height: 100vh;
-        background: rgba(5, 1, 10, 0.85);
-        backdrop-filter: blur(10px);
+        background: rgba(5, 1, 10, 0.75);
+        backdrop-filter: blur(20px);
         z-index: 1000;
         display: flex;
         align-items: flex-start;
@@ -740,10 +743,29 @@
         padding: 3rem 1rem;
     }
     
+    .modal-overlay::before {
+        content: '';
+        position: fixed;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 70vw; height: 70vh;
+        background: radial-gradient(circle, rgba(255,42,109,0.12) 0%, rgba(212,175,55,0.05) 40%, transparent 70%);
+        border-radius: 50%;
+        filter: blur(60px);
+        pointer-events: none;
+        z-index: -1;
+    }
+    
     .modal-content {
         width: 100%;
         max-width: 1000px;
         position: relative;
+        animation: modalRise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    
+    @keyframes modalRise {
+        from { opacity: 0; transform: translateY(30px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .close-seal {
@@ -762,24 +784,38 @@
     }
 
     #exportable-area {
-        background-color: #0c0310; 
-        padding: 3rem;
-        border-radius: 4px;
-        border: 1px solid rgba(212, 175, 55, 0.3);
+        background: linear-gradient(145deg, rgba(20, 10, 25, 0.8) 0%, rgba(10, 5, 15, 0.95) 100%);
+        backdrop-filter: blur(12px);
+        padding: 4rem 3.5rem;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
         position: relative;
+        overflow: hidden;
+    }
+    
+    #exportable-area::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23ffffff' fill-opacity='0.02'/%3E%3C/svg%3E");
+        pointer-events: none;
     }
     
     #exportable-area::before {
-        content: 'THE TRUTH UNSEALED';
+        content: 'AI DIAGNOSTICS';
         position: absolute;
-        top: -10px; left: 50%;
+        top: 0; left: 50%;
         transform: translateX(-50%);
-        background: #0c0310;
-        padding: 0 1rem;
-        color: #ff2a6d;
-        font-family: 'Cinzel', serif;
-        font-size: 0.8rem;
+        background: linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent);
+        border-bottom: 1px solid rgba(212,175,55,0.5);
+        padding: 0.5rem 3rem;
+        color: #d4af37;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 700;
         letter-spacing: 0.4em;
+        border-radius: 0 0 8px 8px;
     }
 
     .diagnosis-container {
@@ -851,19 +887,83 @@
 
     .ember-tag {
         display: inline-block;
-        padding: 4px 12px;
-        border-radius: 2px;
+        padding: 6px 16px;
+        border-radius: 20px;
         font-size: 0.75rem;
-        font-weight: 500;
-        margin: 4px 4px 4px 0;
+        font-weight: 600;
+        margin: 4px 6px 4px 0;
         border: 1px solid;
         letter-spacing: 0.1em;
         text-transform: uppercase;
-        font-family: 'Cinzel', serif;
+        font-family: 'Inter', sans-serif;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        backdrop-filter: blur(5px);
     }
-    .ember-gold { color: #FFD700; background: rgba(255, 215, 0, 0.05); border-color: rgba(255, 215, 0, 0.3); }
-    .ember-orange { color: #FF9800; background: rgba(255, 152, 0, 0.05); border-color: rgba(255, 152, 0, 0.3); }
-    .ember-green { color: #00E676; background: rgba(0, 230, 118, 0.05); border-color: rgba(0, 230, 118, 0.3); }
+    .ember-gold { color: #FFD700; background: rgba(255, 215, 0, 0.1); border-color: rgba(255, 215, 0, 0.4); box-shadow: 0 0 10px rgba(255, 215, 0, 0.15); }
+    .ember-orange { color: #FF9800; background: rgba(255, 152, 0, 0.1); border-color: rgba(255, 152, 0, 0.4); box-shadow: 0 0 10px rgba(255, 152, 0, 0.15); }
+    .ember-green { color: #00E676; background: rgba(0, 230, 118, 0.1); border-color: rgba(0, 230, 118, 0.4); box-shadow: 0 0 10px rgba(0, 230, 118, 0.15); }
+
+    .shap-container {
+        margin-top: 3.5rem; 
+        border-top: 1px solid rgba(255, 255, 255, 0.08); 
+        padding-top: 2.5rem;
+        position: relative;
+        z-index: 10;
+    }
+    .shap-title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family:'Inter', sans-serif; 
+        color:#00e5ff; 
+        font-size: 1.1rem; 
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 2rem;
+    }
+    .shap-tokens-wrapper {
+        display: flex; 
+        flex-wrap: wrap; 
+        justify-content: center; 
+        gap: 0.8rem; 
+        max-width: 850px; 
+        margin: 0 auto;
+    }
+    .shap-pill {
+        border-radius: 24px;
+        padding: 6px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95rem;
+        color: #ffffff;
+        backdrop-filter: blur(5px);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: default;
+    }
+    .shap-pill:hover {
+        transform: translateY(-2px) scale(1.02);
+    }
+    .shap-token-text {
+        font-weight: 500;
+        letter-spacing: 0.02em;
+    }
+    .shap-value-text {
+        font-weight: 700;
+        font-size: 0.8rem;
+        background: rgba(0,0,0,0.3);
+        padding: 2px 6px;
+        border-radius: 10px;
+    }
+    .shap-footer {
+        text-align: center; 
+        margin-top: 2rem; 
+        color: #8a7b82; 
+        font-size: 0.85rem; 
+        font-weight: 300;
+    }
 
     .action-container {
         margin-top: 2rem;
