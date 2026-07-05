@@ -436,6 +436,12 @@
                     AI Decision Trace (SHAP)
                 </div>
                 
+                <div class="shap-description">
+                    <strong>What is this?</strong> SHAP (SHapley Additive exPlanations) reveals exactly how the AI made its decision. Each word or token is scored on how much it influenced your Extraversion quotient.
+                    <br/><br/>
+                    A <span style="color:#00e676;font-weight:bold;">positive value (+)</span> means that word made the AI think you are more outgoing and extraverted. A <span style="color:#ff5252;font-weight:bold;">negative value (-)</span> means that word made the AI think you are more reserved and introverted. The larger the number, the stronger the influence.
+                </div>
+                
                 <div class="shap-tokens-wrapper">
                     {#if analysisResult.shap_tokens}
                         {#each analysisResult.shap_tokens as token}
@@ -920,7 +926,20 @@
         font-weight: 600;
         letter-spacing: 0.1em;
         text-transform: uppercase;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    .shap-description {
+        color: #b0929c;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        text-align: center;
+        max-width: 700px;
+        margin: 0 auto 2.5rem auto;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 1.2rem 1.5rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .shap-tokens-wrapper {
         display: flex; 

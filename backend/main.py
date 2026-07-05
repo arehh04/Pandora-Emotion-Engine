@@ -218,16 +218,16 @@ def predict(req: PredictRequest):
 def get_persona(score: float) -> dict:
     if score >= 75:
         return {
-            "title": "Radiant Force",
-            "desc": "Your words overflow with chaotic, expansive energy. You thrive in the exterior world, pulling others into your orbit. Your emotions spill freely from the box, warming everything they touch."
+            "title": "Social Catalyst",
+            "desc": "You are highly outgoing, energetic, and expressive. Your language suggests that you thrive in social situations, naturally draw people in, and openly share your thoughts and emotions with the world."
         }
     elif score >= 45:
         return {
-            "title": "Balanced Resonance",
-            "desc": "You exhibit a measured cadence. You can pull energy from the crowd when needed, but retreat to your inner sanctum to recharge. A perfect equilibrium of external noise and internal silence."
+            "title": "Balanced Thinker",
+            "desc": "You have a balanced personality. You enjoy interacting with others and can be sociable when needed, but you also value your personal time and need quiet moments to recharge."
         }
     else:
         return {
             "title": "Quiet Observer",
-            "desc": "Your linguistic footprint is deliberate, reflective, and inward-facing. You analyze the room rather than command it. Depth of thought supersedes breadth of interaction."
+            "desc": "You are thoughtful, deliberate, and introverted. Your language suggests that you prefer observing and analyzing situations carefully rather than being the center of attention. You value deep, meaningful connections over casual interactions."
         }
