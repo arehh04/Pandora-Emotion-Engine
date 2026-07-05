@@ -1,10 +1,11 @@
 FROM python:3.12-slim
 
-# Install system dependencies (NGINX, Redis, Supervisord)
+# Install system dependencies (NGINX, Redis, Supervisord, OpenMP for XGBoost)
 RUN apt-get update && apt-get install -y \
     nginx \
     redis-server \
     supervisor \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
