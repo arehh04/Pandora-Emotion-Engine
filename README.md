@@ -1,73 +1,103 @@
-# Predicting Extraversion from Text: A Feature Fusion Approach 🧠
+# Pandora: The Emotion Engine 🧠
 **Final Year Project (FYP) by Nasyrah**
 
-This repository contains the end-to-end machine learning pipeline for predicting Extraversion personality scores from raw text. The project utilizes a "Feature Fusion" approach, combining Classical NLP heuristics (linguistics & emotions) with Deep Learning semantics (BERT).
+Pandora is an end-to-end machine learning system that predicts Extraversion personality scores from raw text. The project utilizes a "Feature Fusion" approach, combining Classical NLP heuristics (linguistics & emotions) with Deep Learning semantics (Fine-Tuned BERT).
+
+This repository contains the full source code for the **SvelteKit Frontend** UI and the **FastAPI Backend** inference engine.
 
 ---
 
 ## 🚀 Project Architecture
 
-### 1. Feature Extraction Pipeline
-The pipeline analyzes raw text by mathematically fusing two distinct branches of natural language processing:
-- **Classical Branch:**
-  - **Linguistic Module:** Analyzes grammatical structures (Noun, Verb, Adjective ratios) using `SpaCy`.
-  - **Emotional Module:** Extracts 10 discrete emotional frequencies (e.g., Joy, Anger) via the **NRC Emotion Lexicon**.
-  - **N-Grams:** Generates `TF-IDF` vectors for the top 2,000 word bigrams.
-- **Deep Learning Branch:**
-  - **Semantic Module:** Extracts a 768-dimensional contextual embedding using Google's pre-trained `bert-base-uncased` transformer model.
+### 1. The Backend (FastAPI + Deep Learning)
+The backend is a high-performance Python inference engine designed for production deployment via Docker.
+* **FastAPI:** Serves the `/predict` REST endpoint.
+* **Feature Fusion:**
+  * **Classical Branch:** Analyzes grammatical structures (Noun/Verb ratios via `SpaCy`) and extracts 10 emotional frequencies via the **NRC Emotion Lexicon**.
+  * **Deep Learning Branch:** Utilizes a custom **Fine-Tuned BERT Regressor** (`bert-base-uncased`) to extract deep semantic dimensions and contextual embeddings.
+* **Caching Layer:**
+  * Implements an in-memory **Bloom Filter** for lightning-fast duplication checks.
+  * Uses **Redis** to cache model outputs and SHAP explanations, preventing expensive re-computation of the BERT model for previously seen text.
+* **Orchestration:** Uses `supervisord` inside Docker to run NGINX, Redis, and FastAPI simultaneously, acting as a reverse-proxy load balancer.
 
-### 2. Machine Learning Modeling (Regression)
-The fused feature matrix is normalized via `StandardScaler` and fed into continuous regression algorithms:
-- **Baseline Model:** Ridge Regression (Linear)
-- **Advanced Models:** XGBoost & Random Forest (Non-Linear Ensemble Trees)
-
-*Hyperparameter tuning was conducted via `RandomizedSearchCV` (3-Fold CV) on Google Colab GPUs.*
-
-### 3. Explainability & EDA
-- **SHAP (SHapley Additive exPlanations):** Used to unpack the "black box" of the models and determine global feature importance.
-- **EDA Visualizations:** Target distributions, semantic heatmaps, and linguistic bigram rankings are automatically generated prior to model training.
+### 2. The Frontend (SvelteKit 5)
+The frontend is a beautifully crafted, highly interactive web dashboard.
+* Built on **Svelte 5** (utilizing reactive `$state` runes).
+* Features a dynamic 24-second infinite space/galaxy canvas animation.
+* Automatically visualizes **SHAP (SHapley Additive exPlanations)** token values to highlight exactly which words influenced the model's prediction.
+* Maps the prediction to implicit Big Five Personality traits via an interactive SVG Radar Chart.
+* Generates downloadable PDF reports ("Seal into Parchment") summarizing the live analysis.
 
 ---
 
 ## 🛠️ Repository Structure
-```
-📁 Nasyrah FYP/
+```text
+📁 Pandora-Emotion-Engine/
 │
-├── 📁 data/                  # Raw datasets, NRC Lexicon, and extracted feature CSVs/NPYs
-├── 📁 models/                # Trained .pkl models, TF-IDF vectorizers, and EDA/SHAP images
+├── 📁 backend/               # FastAPI application logic and API endpoints
+├── 📁 frontend/              # SvelteKit 5 User Interface
+├── 📁 src/                   # Core ML logic (Feature Extraction, Training, SHAP)
+├── 📁 models/                # Trained .pkl models, TF-IDF vectorizers, and PyTorch weights
+├── 📁 data/                  # Lexicons (Note: Large training datasets are excluded via gitignore)
 ├── 📁 notebooks/             # Colab-ready Jupyter notebooks for heavy GPU training
-├── 📁 src/
-│   ├── extract_classical_features.py  # NLP pipeline (SpaCy, NRC, TF-IDF)
-│   ├── train_advanced_models.py       # XGBoost/RF training logic
-│   └── generate_eda.py                # EDA and visualization generation
 │
-├── streamlit_app.py          # Interactive Academic Presentation Dashboard
+├── Dockerfile                # Multi-service container setup for Hugging Face Spaces
+├── supervisord.conf          # Process manager configuration
+├── nginx.conf                # NGINX reverse-proxy configuration
 └── requirements.txt          # Python dependencies
 ```
 
 ---
 
-## 💻 How to Run the Dashboard Locally
+## 💻 Local Development Setup
 
-1. **Clone the repository:**
+### 1. Starting the Backend API
+1. Open a terminal in the root directory.
+2. Create and activate a virtual environment:
    ```bash
-   git clone <your-repo-url>
-   cd "Nasyrah FYP"
+   python -m venv .venv
+   # Windows
+   .\.venv\Scripts\activate
+   # Mac/Linux
+   source .venv/bin/activate
    ```
-
-2. **Install Dependencies:**
+3. Install the dependencies and required SpaCy models:
    ```bash
    pip install -r requirements.txt
    python -m spacy download en_core_web_sm
    ```
-
-3. **Launch the Streamlit Dashboard:**
+4. Start the FastAPI server (make sure you have Redis installed locally if you want caching, otherwise it gracefully disables it):
    ```bash
-   streamlit run streamlit_app.py
+   uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
    ```
-   *The dashboard will automatically open in your web browser at `http://localhost:8501`, featuring 4 academic tabs: Project Overview, Exploratory Data Analysis, Model Performance, and a Live Interactive Demo.*
+
+### 2. Starting the Frontend UI
+1. Open a *second* terminal.
+2. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+3. Install Node.js dependencies:
+   ```bash
+   npm install
+   ```
+4. Start the Svelte development server:
+   ```bash
+   npm run dev
+   ```
+5. Open your browser to `http://localhost:5173`.
 
 ---
 
-## 📊 Results Summary
-By utilizing Feature Fusion and XGBoost, the model achieved a **>50% improvement** in predictive correlation (R²) compared to the linear baseline, proving that advanced non-linear algorithms combined with Deep Learning contextual embeddings can capture psychological nuances missed by traditional frequency-based NLP.
+## 🌍 Production Deployment
+
+### Backend (Hugging Face Docker Spaces)
+The backend is optimized for Hugging Face Docker Spaces (which only expose a single port: 7860).
+1. Create a new Hugging Face Space (Select **Docker** SDK).
+2. Clone your space and copy the repository contents (excluding heavy dataset CSVs).
+3. Push to Hugging Face. The Space will read the `Dockerfile`, install NGINX and Redis, and use `supervisord` to manage the API internally.
+
+### Frontend (Vercel)
+The SvelteKit application is pre-configured with `@sveltejs/adapter-vercel`.
+1. Ensure the `API_URL` in `frontend/src/routes/+page.svelte` points to your Hugging Face space URL (e.g., `https://your-username-pandora.hf.space/predict`).
+2. Import the GitHub repository into [Vercel](https://vercel.com/). Vercel will automatically detect the SvelteKit project and deploy the frontend to a global edge network.
