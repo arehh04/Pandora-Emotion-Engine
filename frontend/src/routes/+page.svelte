@@ -13,7 +13,7 @@
     // The result from the API
     let analysisResult: any = $state(null);
 
-    const API_URL = "http://localhost:8000/predict";
+    const API_URL = "https://arehhham-pandora.hf.space/predict";
 
     async function commenceAnalysis() {
         if (!inputText.trim()) {
