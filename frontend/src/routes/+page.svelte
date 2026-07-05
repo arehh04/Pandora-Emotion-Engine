@@ -47,32 +47,28 @@
         document.body.style.overflow = 'auto';
     }
 
-    function exportToPDF() {
+    function exportToImage() {
         const element = document.getElementById('exportable-area');
         if (!element || typeof window === 'undefined') return;
         
         const btn = document.getElementById('pdf-btn');
         const originalText = btn!.innerText;
-        btn!.innerText = "Forging PDF...";
+        btn!.innerText = "Capturing Image...";
         btn!.style.opacity = "0.7";
         btn!.style.pointerEvents = "none";
 
-        const opt = {
-            margin:       0.4,
-            filename:     'Pandora_Diagnosis_Record.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: false },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
-
         // @ts-ignore
-        html2pdf().set(opt).from(element).save().then(() => {
+        html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#0a0f18' }).then((canvas) => {
+            const link = document.createElement('a');
+            link.download = 'Pandora_Insights_Profile.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
             btn!.innerText = originalText;
             btn!.style.opacity = "1";
             btn!.style.pointerEvents = "auto";
         }).catch((err: any) => {
             console.error(err);
-            btn!.innerText = "Error Sealing Record";
+            btn!.innerText = "Error Capturing Image";
             setTimeout(() => {
                 btn!.innerText = originalText;
                 btn!.style.opacity = "1";
@@ -364,33 +360,73 @@
         
         <!-- The area that will be converted to PDF -->
         <div id="exportable-area">
-            <div class="diagnosis-container">
+            <div class="diagnosis-container" style="flex-direction: column; padding: 2rem;">
                 
-                <!-- Left: Score and Persona -->
-                <div class="score-display">
-                    <div style="color:#b0929c; font-size:0.8rem; letter-spacing:0.2em; text-transform:uppercase; margin-bottom: 0.5rem; font-family:'Cinzel', serif;">Extraversion Quotient</div>
-                    <div class="score-value">{analysisResult.score}</div>
-                    <div class="persona-title">{analysisResult.persona.title}</div>
-                    <div class="persona-desc">{analysisResult.persona.desc}</div>
-                    
-                    <div style="margin-top:2rem;">
-                        <div style="color:#d4af37; font-size:0.9rem; letter-spacing:0.15em; font-family:'Cinzel', serif; font-weight:700; margin-bottom:1rem;">Detected Traces</div>
-                        <div>
-                            {#if analysisResult.emotions.joy > 0} <span class="ember-tag ember-gold">Joy : Present</span> {/if}
-                            {#if analysisResult.emotions.trust > 0} <span class="ember-tag ember-green">Trust : Present</span> {/if}
-                            {#if analysisResult.emotions.anticipation > 0} <span class="ember-tag ember-orange">Anticipation : Present</span> {/if}
-                            {#if analysisResult.emotions.sadness > 0} <span class="ember-tag" style="color: #5C6BC0; border-color: rgba(92,107,192,0.3)">Sadness : Present</span> {/if}
-                            {#if analysisResult.emotions.fear > 0} <span class="ember-tag" style="color: #78909C; border-color: rgba(120,144,156,0.3)">Fear : Present</span> {/if}
-                            {#if analysisResult.emotions.anger > 0} <span class="ember-tag" style="color: #FF5252; border-color: rgba(255,82,82,0.3)">Anger : Present</span> {/if}
-                            <span class="ember-tag" style="color:#b0929c; border-color: rgba(255,255,255,0.1)">Time: {analysisResult.time_ms}ms</span>
+                <!-- PROFILE HEADER -->
+                <div class="profile-header" style="margin-bottom: 2.5rem; text-align: left;">
+                    <div style="color:#00e5ff; font-size:1.2rem; letter-spacing:0.1em; text-transform:uppercase; font-family:'Cinzel', serif; font-weight:700;">
+                        🧠 PROFILE: {analysisResult.persona.title.toUpperCase()} (Score: {analysisResult.score})
+                    </div>
+                    <div style="color:#b0929c; font-size:1rem; line-height:1.6; margin-top:1rem;">
+                        Instead of a grade, think of <strong>{analysisResult.score}</strong> as a coordinate on a map of communication styles. 
+                        Your linguistic footprint shows that you process the world internally before engaging with it. You don't waste words; you weigh them. While others rush to command the room, your model prediction suggests you prefer to <em>decode</em> the room. This isn't withdrawal—it's strategic data-gathering.
+                    </div>
+                </div>
+
+                <!-- EMOTIONAL SIGNATURE -->
+                <div class="emotional-signature" style="margin-bottom: 2.5rem; text-align: left; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="color:#00e5ff; font-size:1.1rem; letter-spacing:0.1em; text-transform:uppercase; font-family:'Cinzel', serif; font-weight:700; margin-bottom:1rem;">
+                        🔍 CURRENT EMOTIONAL SIGNATURE (Model Detections)
+                    </div>
+                    <div style="color:#b0929c; font-size:0.95rem; line-height:1.6;">
+                        Our NLP classifier scanned your language for primary affective valences. Here is what the algorithm flagged in your recent text:
+                        <ul style="margin-top:1rem; padding-left:0; list-style-type: none;">
+                            {#if analysisResult.emotions.sadness > 0}
+                            <li style="margin-bottom:0.8rem; background:rgba(92,107,192,0.1); padding:0.8rem; border-radius:6px;"><strong>SADNESS:</strong> <span style="color:#5C6BC0; font-weight:bold;">PRESENT</span> → <em>The model detects a reflective, melancholic undertone. This often correlates with deep thinking, not necessarily distress—it signals you're processing complexity.</em></li>
+                            {/if}
+                            {#if analysisResult.emotions.fear > 0}
+                            <li style="margin-bottom:0.8rem; background:rgba(120,144,156,0.1); padding:0.8rem; border-radius:6px;"><strong>FEAR:</strong> <span style="color:#78909C; font-weight:bold;">PRESENT</span> → <em>The algorithm picked up on cautious or protective language. This suggests you are risk-aware and meticulous, rather than impulsive.</em></li>
+                            {/if}
+                            {#if analysisResult.emotions.anger > 0}
+                            <li style="margin-bottom:0.8rem; background:rgba(255,82,82,0.1); padding:0.8rem; border-radius:6px;"><strong>ANGER:</strong> <span style="color:#FF5252; font-weight:bold;">PRESENT</span> → <em>Markers of frustration or boundary-setting appeared. In this context, it usually translates to high standards or a desire for things to make logical sense.</em></li>
+                            {/if}
+                            {#if analysisResult.emotions.joy > 0}
+                            <li style="margin-bottom:0.8rem; background:rgba(212,175,55,0.1); padding:0.8rem; border-radius:6px;"><strong>JOY:</strong> <span style="color:#d4af37; font-weight:bold;">PRESENT</span> → <em>Markers of positivity and enthusiasm are evident. You project an uplifting and optimistic internal state.</em></li>
+                            {/if}
+                            {#if analysisResult.emotions.trust > 0}
+                            <li style="margin-bottom:0.8rem; background:rgba(0,230,118,0.1); padding:0.8rem; border-radius:6px;"><strong>TRUST:</strong> <span style="color:#00e676; font-weight:bold;">PRESENT</span> → <em>Words indicating safety and reliability were found. This signals a cooperative and open stance toward others.</em></li>
+                            {/if}
+                            {#if analysisResult.emotions.anticipation > 0}
+                            <li style="margin-bottom:0.8rem; background:rgba(255,152,0,0.1); padding:0.8rem; border-radius:6px;"><strong>ANTICIPATION:</strong> <span style="color:#ff9800; font-weight:bold;">PRESENT</span> → <em>Forward-looking language detected, indicating planning and expectation.</em></li>
+                            {/if}
+                        </ul>
+                        <div style="font-size:0.85rem; opacity:0.7; margin-top:1.5rem; font-style:italic;">
+                            (⏱️ Inference Latency: {analysisResult.time_ms}ms – the time it took the transformer model to parse your text and compute these probabilities.)
                         </div>
                     </div>
                 </div>
 
-                <!-- Right: SVG Radar Chart -->
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem;">
-                    <h3 style="color:#b0929c; font-size:0.9rem; letter-spacing:0.15em; font-family:'Cinzel', serif; margin-bottom:1rem; text-align:center;">The Psychological Construct</h3>
-                    <div class="svg-visualization">
+                <!-- BIG 5 RADAR -->
+                <div class="big-5-section" style="margin-bottom: 2.5rem; display: flex; flex-direction: row; align-items: center; gap: 2rem; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 300px; text-align: left;">
+                        <div style="color:#00e5ff; font-size:1.1rem; letter-spacing:0.1em; text-transform:uppercase; font-family:'Cinzel', serif; font-weight:700; margin-bottom:1rem;">
+                            🧬 THE PSYCHOLOGICAL CONSTRUCT (Big 5)
+                        </div>
+                        <div style="color:#b0929c; font-size:0.95rem; line-height:1.7;">
+                            Here are the core latent traits our model uses as the foundation for your profile:
+                            <ul style="margin-top:0.8rem; padding-left:1.5rem;">
+                                <li><strong>OPENNESS</strong> (High curiosity, abstract thinking)</li>
+                                <li><strong>NEUROTICISM</strong> (Sensitivity to environmental stress)</li>
+                                <li><strong>EXTRAVERSION</strong> (Energy drawn from social interaction)</li>
+                                <li><strong>AGREEABLENESS</strong> (Tendency toward cooperation vs. competition)</li>
+                                <li><strong>CONSCIENTIOUSNESS</strong> (Organization and discipline)</li>
+                            </ul>
+                            <blockquote style="border-left: 3px solid #ff2a6d; padding-left: 1rem; margin-top: 1.2rem; font-style:italic; background: rgba(255,42,109,0.05); padding: 0.8rem;">
+                                Note: Your "{analysisResult.persona.title}" archetype is heavily influenced by your exact coordinates on these 5 dimensions—meaning you find energy in ideas rather than crowds.
+                            </blockquote>
+                        </div>
+                    </div>
+                    <div class="svg-visualization" style="flex: 1; min-width: 300px; display:flex; justify-content:center;">
                         <svg viewBox="0 0 300 300" width="100%" height="250" xmlns="http://www.w3.org/2000/svg">
                             <g stroke="rgba(212,175,55,0.15)" stroke-width="1" fill="none">
                                 <!-- Background Web -->
@@ -427,43 +463,47 @@
                         </svg>
                     </div>
                 </div>
-            </div>
 
-            <!-- Dynamic SHAP Waterfall / Tokens -->
-            <div class="shap-container">
-                <div class="shap-title">
-                    <svg style="width:18px; height:18px; fill:#00e5ff; margin-right:10px;" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-                    AI Decision Trace (SHAP)
-                </div>
-                
-                <div class="shap-description">
-                    <strong>What is this?</strong> SHAP (SHapley Additive exPlanations) reveals exactly how the AI made its decision. Each word or token is scored on how much it influenced your Extraversion quotient.
-                    <br/><br/>
-                    A <span style="color:#00e676;font-weight:bold;">positive value (+)</span> means that word made the AI think you are more outgoing and extraverted. A <span style="color:#ff5252;font-weight:bold;">negative value (-)</span> means that word made the AI think you are more reserved and introverted. The larger the number, the stronger the influence.
-                </div>
-                
-                <div class="shap-tokens-wrapper">
-                    {#if analysisResult.shap_tokens}
-                        {#each analysisResult.shap_tokens as token}
-                            {@const color = getShapColor(token.shap_value, Math.max(...analysisResult.shap_tokens.map((t: any) => Math.abs(t.shap_value))))}
-                            <span class="shap-pill" title="SHAP: {token.shap_value.toFixed(4)}" 
-                                  style="background: linear-gradient(135deg, {color.bg}, rgba(0,0,0,0.2)); border:1px solid {color.border}; box-shadow: 0 4px 15px {color.bg};">
-                                <span class="shap-token-text">{token.token}</span>
-                                <span class="shap-value-text" style="color: {token.shap_value > 0 ? '#00e676' : '#ff5252'}">
-                                    {token.shap_value > 0 ? '+' : ''}{token.shap_value.toFixed(2)}
+                <!-- SHAP EXPLANATION -->
+                <div class="shap-container" style="border: none; padding: 0; background: transparent; text-align: left;">
+                    <div style="color:#00e5ff; font-size:1.1rem; letter-spacing:0.1em; text-transform:uppercase; font-family:'Cinzel', serif; font-weight:700; margin-bottom:1rem; display:flex; align-items:center;">
+                        ⚖️ WHAT SHAPED YOUR SCORE? (SHAP Attributions)
+                    </div>
+                    
+                    <div class="shap-description" style="text-align:left; background:transparent; border:none; padding:0; margin:0 0 1.5rem 0; font-size:0.95rem; color:#b0929c;">
+                        To make our predictions transparent, we use <strong>SHAP</strong> (SHapley Additive exPlanations)—the industry standard for breaking down exactly <em>which</em> text features pushed your Extraversion score up or down.
+                        <br/><br/>
+                        Here is the feature influence breakdown for your specific input:
+                    </div>
+                    
+                    <div class="shap-tokens-wrapper" style="margin-bottom: 1.5rem; justify-content: flex-start;">
+                        {#if analysisResult.shap_tokens}
+                            {#each analysisResult.shap_tokens as token}
+                                {@const color = getShapColor(token.shap_value, Math.max(...analysisResult.shap_tokens.map((t: any) => Math.abs(t.shap_value))))}
+                                <span class="shap-pill" title="SHAP: {token.shap_value.toFixed(4)}" 
+                                      style="background: linear-gradient(135deg, {color.bg}, rgba(0,0,0,0.2)); border:1px solid {color.border}; box-shadow: 0 4px 15px {color.bg};">
+                                    <span class="shap-token-text">{token.token}</span>
+                                    <span class="shap-value-text" style="color: {token.shap_value > 0 ? '#00e676' : '#ff5252'}">
+                                        {token.shap_value > 0 ? '+' : ''}{token.shap_value.toFixed(2)}
+                                    </span>
                                 </span>
-                            </span>
-                        {/each}
-                    {/if}
-                </div>
-                <div class="shap-footer">
-                    Tokens are ordered by influence. Green pushes the EQ score higher, Red pushes it lower.
+                            {/each}
+                        {/if}
+                    </div>
+                    
+                    <div class="shap-footer" style="text-align:left; color:#b0929c; font-size:0.95rem; line-height:1.6; margin-top:0;">
+                        <ul style="padding-left:1.5rem; margin-bottom:1.5rem;">
+                            <li><strong style="color:#00e676;">Positive pushes (+)</strong> counterbalance you toward an outgoing structure.</li>
+                            <li><strong style="color:#ff5252;">Negative pulls (-)</strong> pull your score downward, confirming a tendency for internal, solitary phrasing.</li>
+                        </ul>
+                        <strong>How to read this:</strong> Think of the ML model as a mirror—it's not judging you. It's simply highlighting the statistical weight of your word choices. Your position on the spectrum isn't a flaw; it's a computational signal of your unique style. Keep leaning into your analytical strength.
+                    </div>
                 </div>
             </div>
         </div> <!-- /exportable-area -->
 
         <div class="action-container">
-            <button id="pdf-btn" class="ritual-btn" style="max-width: 400px; font-size: 0.9rem;" onclick={exportToPDF}>Export Results to PDF</button>
+            <button id="pdf-btn" class="ritual-btn" style="max-width: 400px; font-size: 0.9rem;" onclick={exportToImage}>Export Profile as Image</button>
         </div>
 
     </div>
