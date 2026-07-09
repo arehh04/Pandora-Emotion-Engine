@@ -31,17 +31,29 @@ def label_for_tier(tier_num):
 
 
 def _degraded_result(text, ctx, error):
-    prior = predict_ml_prior(text, ctx["nlp"], ctx["nrc_dict"], ctx["ml_model"])
-    return {
-        "tier": prior["tier"],
-        "tier_label": prior["tier_label"],
-        "continuous_score_estimate": prior["score"],
-        "confidence": "low",
-        "rationale": "Agent unavailable; falling back to the ML-prior tool directly.",
-        "trace": [],
-        "degraded": True,
-        "error": error,
-    }
+    try:
+        prior = predict_ml_prior(text, ctx["nlp"], ctx["nrc_dict"], ctx["ml_model"])
+        return {
+            "tier": prior["tier"],
+            "tier_label": prior["tier_label"],
+            "continuous_score_estimate": prior["score"],
+            "confidence": "low",
+            "rationale": "Agent unavailable; falling back to the ML-prior tool directly.",
+            "trace": [],
+            "degraded": True,
+            "error": error,
+        }
+    except Exception as fallback_error:
+        return {
+            "tier": 4,
+            "tier_label": label_for_tier(4),
+            "continuous_score_estimate": 50.0,
+            "confidence": "low",
+            "rationale": "Both the agent and the ML-prior fallback failed; returning a neutral default.",
+            "trace": [],
+            "degraded": True,
+            "error": f"{error} | fallback also failed: {fallback_error}",
+        }
 
 
 def run_agent(client, models, ctx, text, max_iterations=6):
@@ -71,10 +83,11 @@ def run_agent(client, models, ctx, text, max_iterations=6):
                 arguments = json.loads(tool_call["function"]["arguments"])
 
                 if name == "submit_assessment":
+                    score = min(99.0, max(0.0, float(arguments["continuous_score_estimate"])))
                     return {
                         "tier": arguments["tier"],
                         "tier_label": label_for_tier(arguments["tier"]),
-                        "continuous_score_estimate": arguments["continuous_score_estimate"],
+                        "continuous_score_estimate": score,
                         "confidence": arguments["confidence"],
                         "rationale": arguments["rationale"],
                         "trace": trace,

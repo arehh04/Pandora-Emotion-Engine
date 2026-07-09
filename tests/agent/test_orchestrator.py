@@ -107,3 +107,30 @@ def test_run_agent_degrades_gracefully_on_malformed_response():
     assert result["error"] is not None
     assert 0.0 <= result["continuous_score_estimate"] <= 99.0
     assert 1 <= result["tier"] <= 6
+
+
+def test_run_agent_clamps_out_of_range_submitted_score():
+    def handler(request):
+        return _assistant_tool_call_response("call_1", "submit_assessment", {
+            "tier": 6, "continuous_score_estimate": 150.0, "confidence": "high",
+            "rationale": "Overconfident.",
+        })
+
+    client = build_client("fake-key", transport=httpx.MockTransport(handler))
+    ctx = _build_test_context()
+
+    result = run_agent(client, ["fake-model"], ctx, "I love parties!")
+
+    assert result["continuous_score_estimate"] == 99.0
+
+
+def test_degraded_result_survives_ml_prior_failure():
+    from src.agent.orchestrator import _degraded_result
+
+    broken_ctx = {"nlp": None, "nrc_dict": None, "ml_model": None}  # will make predict_ml_prior raise
+
+    result = _degraded_result("some text", broken_ctx, "original error")
+
+    assert result["degraded"] is True
+    assert 0.0 <= result["continuous_score_estimate"] <= 99.0
+    assert 1 <= result["tier"] <= 6
