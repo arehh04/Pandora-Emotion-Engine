@@ -57,36 +57,39 @@ def run_agent(client, models, ctx, text, max_iterations=6):
         except Exception as e:
             return _degraded_result(text, ctx, str(e))
 
-        message = response["choices"][0]["message"]
-        tool_calls = message.get("tool_calls") or []
+        try:
+            message = response["choices"][0]["message"]
+            tool_calls = message.get("tool_calls") or []
 
-        if not tool_calls:
-            return _degraded_result(text, ctx, "Agent responded without calling a tool.")
+            if not tool_calls:
+                return _degraded_result(text, ctx, "Agent responded without calling a tool.")
 
-        messages.append(message)
+            messages.append(message)
 
-        for tool_call in tool_calls:
-            name = tool_call["function"]["name"]
-            arguments = json.loads(tool_call["function"]["arguments"])
+            for tool_call in tool_calls:
+                name = tool_call["function"]["name"]
+                arguments = json.loads(tool_call["function"]["arguments"])
 
-            if name == "submit_assessment":
-                return {
-                    "tier": arguments["tier"],
-                    "tier_label": label_for_tier(arguments["tier"]),
-                    "continuous_score_estimate": arguments["continuous_score_estimate"],
-                    "confidence": arguments["confidence"],
-                    "rationale": arguments["rationale"],
-                    "trace": trace,
-                    "degraded": False,
-                    "error": None,
-                }
+                if name == "submit_assessment":
+                    return {
+                        "tier": arguments["tier"],
+                        "tier_label": label_for_tier(arguments["tier"]),
+                        "continuous_score_estimate": arguments["continuous_score_estimate"],
+                        "confidence": arguments["confidence"],
+                        "rationale": arguments["rationale"],
+                        "trace": trace,
+                        "degraded": False,
+                        "error": None,
+                    }
 
-            result = dispatch_tool_call(name, arguments, ctx)
-            trace.append({"tool": name, "arguments": arguments, "result": result})
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call["id"],
-                "content": json.dumps(result),
-            })
+                result = dispatch_tool_call(name, arguments, ctx)
+                trace.append({"tool": name, "arguments": arguments, "result": result})
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "content": json.dumps(result),
+                })
+        except (KeyError, IndexError, TypeError, ValueError) as e:
+            return _degraded_result(text, ctx, f"Malformed agent response: {e}")
 
     return _degraded_result(text, ctx, f"Max iterations ({max_iterations}) reached without submit_assessment.")

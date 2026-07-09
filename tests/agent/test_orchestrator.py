@@ -92,3 +92,18 @@ def test_run_agent_degrades_gracefully_when_api_fails():
     assert result["error"] is not None
     assert 0.0 <= result["continuous_score_estimate"] <= 99.0
     assert 1 <= result["tier"] <= 6
+
+
+def test_run_agent_degrades_gracefully_on_malformed_response():
+    def handler(request):
+        return httpx.Response(200, json={"not_choices": "this response is malformed"})
+
+    client = build_client("fake-key", transport=httpx.MockTransport(handler))
+    ctx = _build_test_context()
+
+    result = run_agent(client, ["fake-model"], ctx, "I love parties and talking to everyone!")
+
+    assert result["degraded"] is True
+    assert result["error"] is not None
+    assert 0.0 <= result["continuous_score_estimate"] <= 99.0
+    assert 1 <= result["tier"] <= 6
