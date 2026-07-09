@@ -80,6 +80,8 @@ RULES = [
     ({"polarity": "Positive", "energy": "Low", "activity": "Low"}, "Medium"),
     ({"polarity": "Negative", "energy": "High"}, "Medium"),
     ({"polarity": "Neutral", "orientation": "Plural"}, "Medium"),
+    ({"polarity": "Neutral", "orientation": "Balanced"}, "Medium"),
+    ({"energy": "Low", "orientation": "Balanced"}, "Medium"),
 ]
 
 
@@ -89,7 +91,7 @@ def evaluate_rules(memberships):
     for antecedents, consequent in RULES:
         degree = min(memberships[var][set_name] for var, set_name in antecedents.items())
         if degree > 0:
-            fired.append({"antecedents": antecedents, "consequent": consequent, "strength": degree})
+            fired.append({"antecedents": dict(antecedents), "consequent": consequent, "strength": degree})
             output_activations[consequent] = max(output_activations[consequent], degree)
     return fired, output_activations
 

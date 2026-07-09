@@ -160,3 +160,16 @@ def test_run_fuzzy_inference_result_shape():
     assert isinstance(result["fuzzy_score"], float)
     assert isinstance(result["tier"], int)
     assert isinstance(result["tier_label"], str)
+
+
+def test_run_fuzzy_inference_neutral_balanced_input_is_not_silently_low():
+    features = {
+        "positive": 0.1, "negative": 0.1, "semantic_polarity": 0.0,
+        "behav_exclamation_ratio": 0.0, "behav_question_ratio": 0.0,
+        "behav_verb_ratio": 0.2, "behav_1st_sg_pronoun_ratio": 0.05, "behav_1st_pl_pronoun_ratio": 0.05,
+    }
+
+    result = run_fuzzy_inference(features)
+
+    assert len(result["fired_rules"]) > 0
+    assert 3 <= result["tier"] <= 5
