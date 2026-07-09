@@ -29,7 +29,7 @@ def compute_augmentation_coverage(clean_path, augmented_path, bin_col="expressiv
         bin_counts = aug_df[bin_col].value_counts().to_dict()
         counts = list(bin_counts.values())
         if counts and min(counts) > 0:
-            is_balanced = (max(counts) / min(counts)) <= 2.0
+            is_balanced = (max(counts) / min(counts)) <= 1.5
 
     return {
         "total_original_rows": total_original,
