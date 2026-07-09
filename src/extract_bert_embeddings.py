@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import torch
 from transformers import BertTokenizer, BertModel
-from tqdm import tqdm
 
 
 def embed_texts(texts, tokenizer, model, device, batch_size=32):

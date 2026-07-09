@@ -30,11 +30,12 @@ def build_rag_corpus(data_dir, embedder, n_per_tier=60, seed=42):
             [clean_df[["bert_text", "extraversion"]], aug_df[["bert_text", "extraversion"]]],
             ignore_index=True,
         )
+        combined = combined.drop_duplicates(subset=["bert_text"]).reset_index(drop=True)
     else:
         combined = clean_df[["bert_text", "extraversion"]]
 
     exemplars_df = sample_balanced_exemplars(combined, n_per_tier=n_per_tier, seed=seed)
-    exemplar_embeddings = embed_corpus(exemplars_df["bert_text"].tolist(), embedder)
+    exemplar_embeddings = embed_corpus(exemplars_df["bert_text"].fillna("").tolist(), embedder)
 
     theory_path = os.path.join(data_dir, "rag", "theory_corpus.json")
     theory_entries = load_theory_corpus(theory_path)
@@ -47,7 +48,7 @@ def build_rag_corpus(data_dir, embedder, n_per_tier=60, seed=42):
 def main():
     from sentence_transformers import SentenceTransformer
 
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     data_dir = os.path.join(base_dir, "data")
     rag_dir = os.path.join(data_dir, "rag")
     os.makedirs(rag_dir, exist_ok=True)
