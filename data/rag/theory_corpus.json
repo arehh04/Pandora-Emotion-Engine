@@ -1,0 +1,104 @@
+[
+  {
+    "id": "extraversion-definition",
+    "topic": "Trait definition",
+    "text": "Extraversion is one of the five broad domains in the Five-Factor Model of personality, describing a tendency toward sociability, positive emotionality, assertiveness, and drawing energy from the external social world rather than solitary reflection.",
+    "citation_needed": "Verify against Costa & McCrae's original NEO-PI-R formulation before thesis use."
+  },
+  {
+    "id": "facet-gregariousness",
+    "topic": "Extraversion facet: Gregariousness",
+    "text": "Gregariousness describes a preference for the company of others and enjoyment of crowds and social gatherings; low scorers tend to prefer solitude or small, familiar groups.",
+    "citation_needed": "Verify facet definition against the specific Big Five facet inventory used in the literature review."
+  },
+  {
+    "id": "facet-assertiveness",
+    "topic": "Extraversion facet: Assertiveness",
+    "text": "Assertiveness reflects a tendency to be socially dominant, forceful, and expressive of opinions in group settings, often taking a leadership role in conversation.",
+    "citation_needed": "Verify facet definition against the specific Big Five facet inventory used in the literature review."
+  },
+  {
+    "id": "facet-activity-level",
+    "topic": "Extraversion facet: Activity level",
+    "text": "Activity level captures a preference for a fast pace of living, being busy, and engaging energetically with tasks and social situations rather than a slow, deliberate pace.",
+    "citation_needed": "Verify facet definition against the specific Big Five facet inventory used in the literature review."
+  },
+  {
+    "id": "facet-excitement-seeking",
+    "topic": "Extraversion facet: Excitement-seeking",
+    "text": "Excitement-seeking describes a craving for stimulation and thrill from one's environment, such as social risk-taking or novel experiences; low scorers prefer calmer, more predictable settings.",
+    "citation_needed": "Verify facet definition against the specific Big Five facet inventory used in the literature review."
+  },
+  {
+    "id": "facet-positive-emotions",
+    "topic": "Extraversion facet: Positive emotions",
+    "text": "Positive emotions reflects a tendency to experience joy, enthusiasm, and cheerfulness, and to express these feelings openly in language and behavior.",
+    "citation_needed": "Verify facet definition against the specific Big Five facet inventory used in the literature review."
+  },
+  {
+    "id": "facet-warmth",
+    "topic": "Extraversion facet: Warmth",
+    "text": "Warmth describes an interest in and affection for other people, expressed through friendliness and an easy ability to form close attachments.",
+    "citation_needed": "Verify facet definition against the specific Big Five facet inventory used in the literature review."
+  },
+  {
+    "id": "marker-word-count",
+    "topic": "Linguistic marker: Talkativeness",
+    "text": "Higher word counts and longer utterances in open-ended text have been associated with extraverted communication style, reflecting a general tendency toward verbal expressiveness.",
+    "citation_needed": "Verify against Pennebaker & King (1999) or a comparable linguistic-style study before citing as an empirical finding."
+  },
+  {
+    "id": "marker-positive-emotion-words",
+    "topic": "Linguistic marker: Positive emotion words",
+    "text": "Frequent use of positive-emotion words (e.g., joy, excitement, enthusiasm) in text has been linked to higher extraversion, consistent with the positive-emotions facet of the trait.",
+    "citation_needed": "Verify against LIWC-based personality studies (e.g., Pennebaker & King 1999; Yarkoni 2010) before citing as an empirical finding."
+  },
+  {
+    "id": "marker-social-words",
+    "topic": "Linguistic marker: Social word usage",
+    "text": "Frequent use of social words and first-person plural pronouns (we, us, our) can indicate a social, group-oriented framing of experience, consistent with the gregariousness and warmth facets.",
+    "citation_needed": "Verify against pronoun-usage-and-personality literature before citing as an empirical finding."
+  },
+  {
+    "id": "marker-expressive-punctuation",
+    "topic": "Linguistic marker: Expressive punctuation",
+    "text": "Frequent exclamation marks and other expressive punctuation in text can signal heightened enthusiasm or emotional intensity, plausibly linked to the excitement-seeking and positive-emotions facets.",
+    "citation_needed": "Treat as a plausible heuristic pending direct empirical support; do not cite as an established finding without a source."
+  },
+  {
+    "id": "marker-activity-verbs",
+    "topic": "Linguistic marker: Activity-oriented verbs",
+    "text": "A high ratio of action verbs relative to static or reflective language may indicate an active, outward-facing orientation consistent with the activity-level facet of extraversion.",
+    "citation_needed": "Treat as a plausible heuristic pending direct empirical support; do not cite as an established finding without a source."
+  },
+  {
+    "id": "semantic-vs-lexical",
+    "topic": "Semantic context vs. keyword counting",
+    "text": "Personality expression in text is often contextual: the same surface words can indicate different personality signals depending on sentence structure and situational framing, which is why contextual language understanding can outperform simple keyword-frequency counting for this task.",
+    "citation_needed": "Frame as a methodological observation from this project's own prior SHAP analysis (see docs/thesis/Chapter4_Results_Interpretability.md), not an external citation."
+  },
+  {
+    "id": "introversion-contrast",
+    "topic": "Introversion characteristics",
+    "text": "Introversion, the low end of the Extraversion dimension, is characterized by a preference for solitary or low-stimulation activities, more reserved social behavior, and a tendency to reflect before speaking rather than think aloud.",
+    "citation_needed": "Verify against the same Five-Factor Model source used for the extraversion-definition entry."
+  },
+  {
+    "id": "ambiversion-concept",
+    "topic": "Ambiversion",
+    "text": "Most individuals fall between the extremes of extraversion and introversion, exhibiting a mixture of sociable and reserved tendencies depending on context; this is sometimes referred to as ambiversion and is consistent with Extraversion being a continuous trait rather than a strict binary category.",
+    "citation_needed": "Verify against a Big Five continuous-trait-distribution source before citing as an established finding."
+  },
+  {
+    "id": "fuzzy-logic-rationale",
+    "topic": "Fuzzy logic for personality gradation",
+    "text": "Because personality traits are continuous and individual text samples rarely express a trait in a purely binary way, membership-based (fuzzy) reasoning that allows partial degrees of 'high' or 'low' expression can better reflect the graded nature of personality signals than hard thresholding.",
+    "citation_needed": "This is a methodological justification for this project's design choice, not an external empirical claim; cite fuzzy-logic-in-NLP literature if a supporting source is added later."
+  },
+  {
+    "id": "interpretability-risk",
+    "topic": "Explainability risk of dense embeddings",
+    "text": "Dense neural embeddings can capture rich contextual signal but are harder to interpret directly; without an explicit reasoning trace, a model relying solely on such embeddings risks producing plausible-looking but unfaithful explanations for its predictions.",
+    "citation_needed": "Frame as a methodological observation from this project's own prior SHAP analysis (see docs/thesis/Chapter4_Results_Interpretability.md), not an external citation."
+  }
+]
