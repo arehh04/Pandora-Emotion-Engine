@@ -4,15 +4,15 @@
 
 **Goal:** Build the three independent, callable "tools" the Plan 3 Agent Orchestrator will consult: a Fuzzy Logic Engine, a retrained-ML "prior" predictor, and a RAG retrieval tool over Plan 1's knowledge base — plus a shared classical-feature extraction wrapper the fuzzy engine consumes.
 
-**Architecture:** Each tool is a standalone module under `src/agent/tools/` with one public function taking plain-Python/pandas inputs and returning a plain dict — no shared base class, no framework. The fuzzy engine is a hand-rolled Mamdani inference system (triangular membership functions, min/max rule aggregation, centroid defuzzification) implemented in pure NumPy — this project deliberately skips the `scikit-fuzzy` dependency (per the design spec's own flagged fallback: the library is lightly maintained, and hand-rolling this specific math is small and gives full control over "which rules fired," which the fuzzy tool needs for its explainability trace). The ML-prior tool reuses the *existing, already-trained* classical pipeline (TF-IDF + 3-layer classical features → Ridge/XGBoost/RandomForest, exactly as `backend/main.py`'s current `/predict` endpoint does it — **not** the classical+BERT fusion described in the original design spec Section 5.3, which does not match the code as it exists today). The RAG retrieval tool loads Plan 1's on-disk corpus artifacts and does in-memory cosine-similarity top-k lookup.
+**Architecture:** Each tool is a standalone module under `src/agent/tools/` with one public function taking plain-Python/pandas inputs and returning a plain dict — no shared base class, no framework. **Every tool in this plan is fully self-contained and deliberately independent of `src/extract_classical_features.py` and `backend/main.py`** — both files are under active, uncommitted, in-progress revision elsewhere in this project (their function names, feature sets, and even whether XGBoost/RF fuse BERT embeddings have changed more than once during this project's lifetime) and are not a stable foundation to build on right now. This plan's tools own their own small, stable feature contract instead; wiring them up to the project's other pipeline(s) is an explicit later integration step, not part of this plan. The fuzzy engine is a hand-rolled Mamdani inference system (triangular membership functions, min/max rule aggregation, centroid defuzzification) implemented in pure NumPy — this project deliberately skips the `scikit-fuzzy` dependency (per the design spec's own flagged fallback: the library is lightly maintained, and hand-rolling this specific math is small and gives full control over "which rules fired," which the fuzzy tool needs for its explainability trace). The ML-prior tool is a small Ridge regressor trained directly on this plan's own 8-feature contract (no TF-IDF, no BERT, no dependency on any pre-existing `.pkl` artifact) — deliberately lightweight until a later integration step decides how it should relate to the project's other, currently-unstable model-training pipeline. The RAG retrieval tool loads Plan 1's on-disk corpus artifacts and does in-memory cosine-similarity top-k lookup.
 
 **Tech Stack:** Python (`.venv`), pandas, numpy, spaCy (`en_core_web_sm`), scikit-learn, xgboost, joblib, sentence-transformers (lazy-imported, real usage only). No new dependencies beyond what's already in `.venv`.
 
 ## Global Constraints
 
 - **Run every command in this plan with the project's virtual environment, not a bare `python`:** `"./.venv/Scripts/python.exe"` (or activate it first: `.\.venv\Scripts\activate` then `python`). This repo has two Python installs with different partial dependency sets; `.venv` is the one with spaCy, xgboost, and scikit-learn, and it now also has `pytest` and `sentence-transformers` installed (added when this plan was scoped — confirmed via `.venv/Scripts/python.exe -m pip list`).
-- Ridge/XGBoost/RandomForest ("the ML prior") consume **TF-IDF (2000 dims) + Layer 1 (semantic/NRC) + Layer 2 (lexical) + Layer 3 (behavioral) classical features only, scaled** — no BERT embeddings. This matches `backend/main.py`'s current non-BERT branch of `/predict` and `src/train_classical_models.py`. Do not reintroduce BERT fusion for these three models.
-- Default ML-prior model is **Random Forest** (`models/advanced_rf_model.pkl`) — the strongest performer per the project's existing Chapter 4 evaluation table (RMSE 28.22 vs. XGBoost's 28.29).
+- **Do not import anything from `src.extract_classical_features` or `backend.main` in this plan.** Both are under active uncommitted revision outside this plan's scope and are not a stable dependency right now. Every tool this plan creates owns its own small feature/model logic, self-contained under `src/agent/tools/`.
+- Default ML-prior model is a self-contained **Ridge regressor**, trained on this plan's own 8-feature contract (see Task 3) — not a reuse of any existing `models/*.pkl` artifact.
 - Canonical tier scheme lives in `src/tiers.py` (from Plan 1) — `assign_tier(score) -> (tier_num, label)`. Every tool in this plan reports its result through this same function; do not re-derive tier boundaries locally.
 - No `__init__.py` files anywhere under `src/` (implicit namespace packages — established convention, verified in Plan 1).
 - No live LLM/API calls anywhere in this plan — that's Plan 3 (Agent Orchestrator). These tools are deterministic, callable Python functions.
@@ -20,33 +20,30 @@
 
 ---
 
-### Task 1: Classical feature extraction wrapper
+### Task 1: Self-contained classical feature extraction
 
 **Files:**
 - Create: `src/agent/tools/classical_features.py`
 - Test: `tests/agent/tools/test_classical_features.py`
 
 **Interfaces:**
-- Consumes: `compute_layer1_semantic`, `compute_layer2_lexical`, `compute_layer3_behavioral`, `load_nrc_lexicon` from `src.extract_classical_features` (existing, unchanged).
-- Produces: `extract_features_for_text(text: str, nlp, nrc_dict: dict) -> dict` — a single flat dict merging every Layer 1/2/3 feature for one piece of text. Consumed by Task 2 (Fuzzy Logic Engine).
+- Consumes: nothing from this project's other modules — this task owns its own NRC-lexicon loader and feature computation, independent of `src/extract_classical_features.py`.
+- Produces: `load_nrc_lexicon(filepath: str) -> dict` and `extract_features_for_text(text: str, nlp, nrc_dict: dict) -> dict` returning a flat dict with exactly these 8 keys: `positive`, `negative`, `semantic_polarity`, `behav_exclamation_ratio`, `behav_question_ratio`, `behav_verb_ratio`, `behav_1st_sg_pronoun_ratio`, `behav_1st_pl_pronoun_ratio`. Consumed by Task 2 (Fuzzy Logic Engine) and Task 3 (ML-prior tool).
 
 - [ ] **Step 1: Write the failing test**
 
-Create `tests/agent/tools/test_classical_features.py`. This test uses the **real** `en_core_web_sm` spaCy model and the **real** NRC lexicon file already in this repo — both load in a couple of seconds, so there's no need to stub them:
+Create `tests/agent/tools/test_classical_features.py`. This test uses the **real** `en_core_web_sm` spaCy model and the **real** NRC lexicon file already in this repo (`data/NRC-Emotion-Lexicon-Senselevel-v0.92.txt`, a static data file, not the changing code) — both load in a couple of seconds, so there's no need to stub them:
 
 ```python
 import os
 
 import spacy
 
-from src.extract_classical_features import load_nrc_lexicon
-from src.agent.tools.classical_features import extract_features_for_text
+from src.agent.tools.classical_features import extract_features_for_text, load_nrc_lexicon
 
 
 def _load_real_nlp_and_lexicon():
     nlp = spacy.load("en_core_web_sm")
-    if "sentencizer" not in nlp.pipe_names:
-        nlp.add_pipe("sentencizer")
     nrc_path = os.path.join("data", "NRC-Emotion-Lexicon-Senselevel-v0.92.txt")
     nrc_dict = load_nrc_lexicon(nrc_path)
     return nlp, nrc_dict
@@ -58,14 +55,11 @@ def test_extract_features_for_text_returns_expected_keys():
     features = extract_features_for_text("I love parties and meeting new people!", nlp, nrc_dict)
 
     expected_keys = {
-        "anger", "anticip", "disgust", "fear", "joy", "negative", "positive", "sadness",
-        "surprise", "trust", "semantic_polarity",
-        "lexical_ttr", "lexical_word_count",
-        "behav_avg_sentence_length", "behav_exclamation_ratio", "behav_question_ratio",
-        "behav_all_caps_ratio", "behav_verb_ratio", "behav_adj_ratio",
+        "positive", "negative", "semantic_polarity",
+        "behav_exclamation_ratio", "behav_question_ratio", "behav_verb_ratio",
         "behav_1st_sg_pronoun_ratio", "behav_1st_pl_pronoun_ratio",
     }
-    assert expected_keys.issubset(features.keys())
+    assert set(features.keys()) == expected_keys
     assert isinstance(features["semantic_polarity"], float)
 
 
@@ -78,12 +72,23 @@ def test_extract_features_for_text_detects_exclamation():
     assert excited["behav_exclamation_ratio"] > flat["behav_exclamation_ratio"]
 
 
+def test_extract_features_for_text_detects_pronoun_orientation():
+    nlp, nrc_dict = _load_real_nlp_and_lexicon()
+
+    singular = extract_features_for_text("I went to my room by myself.", nlp, nrc_dict)
+    plural = extract_features_for_text("We went to our house together.", nlp, nrc_dict)
+
+    assert singular["behav_1st_sg_pronoun_ratio"] > singular["behav_1st_pl_pronoun_ratio"]
+    assert plural["behav_1st_pl_pronoun_ratio"] > plural["behav_1st_sg_pronoun_ratio"]
+
+
 def test_extract_features_for_text_empty_string_does_not_raise():
     nlp, nrc_dict = _load_real_nlp_and_lexicon()
 
     features = extract_features_for_text("", nlp, nrc_dict)
 
-    assert features["lexical_word_count"] == 0
+    assert features["behav_verb_ratio"] == 0.0
+    assert features["behav_exclamation_ratio"] == 0.0
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -96,38 +101,69 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'src.agent'` (or `src.
 Create `src/agent/tools/classical_features.py`:
 
 ```python
-"""Wraps the existing 3-layer classical feature extraction for a single piece of text."""
-import pandas as pd
+"""Self-contained feature extraction for the Fuzzy Logic Engine and ML-prior
+tool. Deliberately independent of src/extract_classical_features.py and
+backend/main.py, which are under active, unstable revision elsewhere in
+this project — this module owns its own small, stable 8-feature contract.
+"""
 
-from src.extract_classical_features import (
-    compute_layer1_semantic,
-    compute_layer2_lexical,
-    compute_layer3_behavioral,
-)
+FIRST_PERSON_SINGULAR = {"i", "me", "my", "mine", "myself"}
+FIRST_PERSON_PLURAL = {"we", "us", "our", "ours", "ourselves"}
+
+
+def load_nrc_lexicon(filepath):
+    emotions_dict = {}
+    with open(filepath, "r", encoding="utf-8") as f:
+        for line in f:
+            parts = line.strip().split("\t")
+            if len(parts) == 3:
+                word_sense, emotion, score = parts
+                word = word_sense.split("--")[0]
+                if int(score) == 1:
+                    emotions_dict.setdefault(word, set()).add(emotion)
+    return emotions_dict
 
 
 def extract_features_for_text(text, nlp, nrc_dict):
     doc = nlp(text)
-    lemmatized = " ".join([t.lemma_ for t in doc if not t.is_stop])
+    lemmas = [t.lemma_.lower() for t in doc if not t.is_stop and not t.is_punct]
+    word_count = len(doc)
 
-    l1_df = compute_layer1_semantic(pd.Series([lemmatized]), nrc_dict)
-    l2_df = compute_layer2_lexical(pd.Series([lemmatized]))
-    l3_df = compute_layer3_behavioral([text], nlp)
+    positive_hits = sum(1 for lemma in lemmas if lemma in nrc_dict and "positive" in nrc_dict[lemma])
+    negative_hits = sum(1 for lemma in lemmas if lemma in nrc_dict and "negative" in nrc_dict[lemma])
+    total_lemmas = len(lemmas)
+    positive_ratio = positive_hits / total_lemmas if total_lemmas > 0 else 0.0
+    negative_ratio = negative_hits / total_lemmas if total_lemmas > 0 else 0.0
+    semantic_polarity = (positive_ratio - negative_ratio) / (positive_ratio + negative_ratio + 1e-5)
 
-    combined = pd.concat([l1_df, l2_df, l3_df], axis=1)
-    return combined.iloc[0].to_dict()
+    exclamation_count = text.count("!")
+    question_count = text.count("?")
+    verbs = sum(1 for t in doc if t.pos_ == "VERB")
+    pronouns_sg = sum(1 for t in doc if t.pos_ == "PRON" and t.text.lower() in FIRST_PERSON_SINGULAR)
+    pronouns_pl = sum(1 for t in doc if t.pos_ == "PRON" and t.text.lower() in FIRST_PERSON_PLURAL)
+
+    return {
+        "positive": positive_ratio,
+        "negative": negative_ratio,
+        "semantic_polarity": semantic_polarity,
+        "behav_exclamation_ratio": exclamation_count / word_count if word_count > 0 else 0.0,
+        "behav_question_ratio": question_count / word_count if word_count > 0 else 0.0,
+        "behav_verb_ratio": verbs / word_count if word_count > 0 else 0.0,
+        "behav_1st_sg_pronoun_ratio": pronouns_sg / word_count if word_count > 0 else 0.0,
+        "behav_1st_pl_pronoun_ratio": pronouns_pl / word_count if word_count > 0 else 0.0,
+    }
 ```
 
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `"./.venv/Scripts/python.exe" -m pytest tests/agent/tools/test_classical_features.py -v`
-Expected: PASS (3 tests)
+Expected: PASS (4 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add src/agent/tools/classical_features.py tests/agent/tools/test_classical_features.py
-git commit -m "feat: add single-text classical feature extraction wrapper"
+git commit -m "feat: add self-contained single-text classical feature extraction"
 ```
 
 ---
@@ -517,60 +553,98 @@ git commit -m "feat: add hand-rolled Mamdani fuzzy logic engine for Extraversion
 
 ---
 
-### Task 3: ML-prior tool (retrained classical models, wrapped for single-text inference)
+### Task 3: ML-prior tool (self-contained Ridge regressor on the 8-feature contract)
 
 **Files:**
 - Create: `src/agent/tools/ml_prior.py`
 - Test: `tests/agent/tools/test_ml_prior.py`
 
 **Interfaces:**
-- Consumes: `compute_layer1_semantic`, `compute_layer2_lexical`, `compute_layer3_behavioral` from `src.extract_classical_features`; `assign_tier` from `src.tiers`; the existing on-disk artifacts `models/tfidf_vectorizer.pkl`, `models/feature_scaler.pkl`, `models/advanced_rf_model.pkl` (default), `models/advanced_xgboost_model.pkl`, `models/classical_ridge_model.pkl`.
-- Produces: `load_ml_prior_artifacts(models_dir: str, model_name: str = "random_forest") -> dict` (keys `tfidf`, `scaler`, `model`) and `predict_ml_prior(text: str, nlp, nrc_dict: dict, artifacts: dict) -> dict` returning `{"score": float, "tier": int, "tier_label": str}`. Consumed by Plan 3's Agent Orchestrator.
+- Consumes: `extract_features_for_text` from Task 1's `src.agent.tools.classical_features`; `assign_tier` from `src.tiers`.
+- Produces: `FEATURE_ORDER` (list of the 8 feature names, fixed order), `features_to_vector(features: dict) -> list[float]`, `train_ml_prior(feature_rows: list[dict], scores: list[float], alpha: float = 1.0) -> sklearn.linear_model.Ridge`, and `predict_ml_prior(text: str, nlp, nrc_dict: dict, model) -> dict` returning `{"score": float, "tier": int, "tier_label": str}`. Consumed by Plan 3's Agent Orchestrator.
 
-This task uses the project's **real, already-trained** `.pkl` artifacts and the real spaCy model directly in its tests — loading them takes a couple of seconds, no training happens, so this is a fast, faithful integration test rather than a stubbed one.
+This tool is deliberately small and self-contained: a Ridge regressor trained directly on this plan's own 8 features (no TF-IDF, no BERT, no dependency on any pre-existing `.pkl` artifact from the project's other, currently-unstable model-training scripts). How this relates to the project's fuller pipeline is a later integration decision, not part of this plan.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `tests/agent/tools/test_ml_prior.py`:
+Create `tests/agent/tools/test_ml_prior.py`. This test trains on synthetic feature rows with an obvious signal (more positive/verb/plural-pronoun signal → higher score) so the direction of the fit is a meaningful, real assertion — not just a shape check — while staying fast (no real dataset needed for this):
 
 ```python
 import os
+import random
 
 import spacy
 
-from src.extract_classical_features import load_nrc_lexicon
-from src.agent.tools.ml_prior import load_ml_prior_artifacts, predict_ml_prior, MODEL_FILENAMES
+from src.agent.tools.classical_features import extract_features_for_text, load_nrc_lexicon
+from src.agent.tools.ml_prior import FEATURE_ORDER, features_to_vector, train_ml_prior, predict_ml_prior
 
 
 def _load_real_nlp_and_lexicon():
     nlp = spacy.load("en_core_web_sm")
-    if "sentencizer" not in nlp.pipe_names:
-        nlp.add_pipe("sentencizer")
     nrc_path = os.path.join("data", "NRC-Emotion-Lexicon-Senselevel-v0.92.txt")
     nrc_dict = load_nrc_lexicon(nrc_path)
     return nlp, nrc_dict
 
 
-def test_load_ml_prior_artifacts_default_model():
-    artifacts = load_ml_prior_artifacts("models", model_name="random_forest")
+def _synthetic_training_data():
+    random.seed(42)
+    feature_rows = []
+    scores = []
+    for _ in range(60):
+        extraverted_signal = random.random()  # 0..1, drives both features and score
+        features = {
+            "positive": extraverted_signal * 0.4,
+            "negative": (1 - extraverted_signal) * 0.3,
+            "semantic_polarity": extraverted_signal * 2 - 1,
+            "behav_exclamation_ratio": extraverted_signal * 0.2,
+            "behav_question_ratio": 0.05,
+            "behav_verb_ratio": 0.1 + extraverted_signal * 0.3,
+            "behav_1st_sg_pronoun_ratio": (1 - extraverted_signal) * 0.2,
+            "behav_1st_pl_pronoun_ratio": extraverted_signal * 0.2,
+        }
+        feature_rows.append(features)
+        scores.append(extraverted_signal * 99.0)
+    return feature_rows, scores
 
-    assert set(artifacts.keys()) == {"tfidf", "scaler", "model"}
-    assert type(artifacts["model"]).__name__ == "RandomForestRegressor"
+
+def test_features_to_vector_matches_feature_order():
+    features = {name: float(i) for i, name in enumerate(FEATURE_ORDER)}
+
+    vector = features_to_vector(features)
+
+    assert vector == [float(i) for i in range(len(FEATURE_ORDER))]
 
 
-def test_load_ml_prior_artifacts_supports_all_model_names():
-    for name in MODEL_FILENAMES:
-        artifacts = load_ml_prior_artifacts("models", model_name=name)
-        assert artifacts["model"] is not None
+def test_train_ml_prior_learns_positive_direction():
+    feature_rows, scores = _synthetic_training_data()
+
+    model = train_ml_prior(feature_rows, scores)
+
+    low_signal = {
+        "positive": 0.0, "negative": 0.3, "semantic_polarity": -1.0,
+        "behav_exclamation_ratio": 0.0, "behav_question_ratio": 0.05,
+        "behav_verb_ratio": 0.1, "behav_1st_sg_pronoun_ratio": 0.2, "behav_1st_pl_pronoun_ratio": 0.0,
+    }
+    high_signal = {
+        "positive": 0.4, "negative": 0.0, "semantic_polarity": 1.0,
+        "behav_exclamation_ratio": 0.2, "behav_question_ratio": 0.05,
+        "behav_verb_ratio": 0.4, "behav_1st_sg_pronoun_ratio": 0.0, "behav_1st_pl_pronoun_ratio": 0.2,
+    }
+
+    low_pred = model.predict([features_to_vector(low_signal)])[0]
+    high_pred = model.predict([features_to_vector(high_signal)])[0]
+
+    assert high_pred > low_pred
 
 
 def test_predict_ml_prior_returns_valid_score_and_tier():
     nlp, nrc_dict = _load_real_nlp_and_lexicon()
-    artifacts = load_ml_prior_artifacts("models", model_name="random_forest")
+    feature_rows, scores = _synthetic_training_data()
+    model = train_ml_prior(feature_rows, scores)
 
     result = predict_ml_prior(
         "I love going to parties, meeting new people, and being the center of attention!",
-        nlp, nrc_dict, artifacts,
+        nlp, nrc_dict, model,
     )
 
     assert set(result.keys()) == {"score", "tier", "tier_label"}
@@ -580,9 +654,10 @@ def test_predict_ml_prior_returns_valid_score_and_tier():
 
 def test_predict_ml_prior_clamps_score_into_valid_range():
     nlp, nrc_dict = _load_real_nlp_and_lexicon()
-    artifacts = load_ml_prior_artifacts("models", model_name="random_forest")
+    feature_rows, scores = _synthetic_training_data()
+    model = train_ml_prior(feature_rows, scores)
 
-    result = predict_ml_prior("a", nlp, nrc_dict, artifacts)
+    result = predict_ml_prior("a", nlp, nrc_dict, model)
 
     assert 0.0 <= result["score"] <= 99.0
 ```
@@ -597,54 +672,40 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'src.agent.tools.ml_pr
 Create `src/agent/tools/ml_prior.py`:
 
 ```python
-"""Wraps the existing, already-trained classical Ridge/XGBoost/RandomForest
-models for single-text inference, mirroring backend/main.py's non-BERT
-/predict branch: TF-IDF + Layer 1/2/3 classical features, scaled.
+"""Self-contained ML-prior tool: a small Ridge regressor trained directly on
+classical_features.py's 8-feature contract, independent of the project's
+other (currently unstable) model-training pipeline. Wiring this up to a
+larger feature set or a different backing model is a later integration step.
 """
-import os
+import numpy as np
+from sklearn.linear_model import Ridge
 
-import joblib
-import pandas as pd
-
-from src.extract_classical_features import (
-    compute_layer1_semantic,
-    compute_layer2_lexical,
-    compute_layer3_behavioral,
-)
+from src.agent.tools.classical_features import extract_features_for_text
 from src.tiers import assign_tier
 
-MODEL_FILENAMES = {
-    "random_forest": "advanced_rf_model.pkl",
-    "xgboost": "advanced_xgboost_model.pkl",
-    "ridge": "classical_ridge_model.pkl",
-}
+FEATURE_ORDER = [
+    "positive", "negative", "semantic_polarity",
+    "behav_exclamation_ratio", "behav_question_ratio", "behav_verb_ratio",
+    "behav_1st_sg_pronoun_ratio", "behav_1st_pl_pronoun_ratio",
+]
 
 
-def load_ml_prior_artifacts(models_dir, model_name="random_forest"):
-    tfidf = joblib.load(os.path.join(models_dir, "tfidf_vectorizer.pkl"))
-    scaler = joblib.load(os.path.join(models_dir, "feature_scaler.pkl"))
-    model = joblib.load(os.path.join(models_dir, MODEL_FILENAMES[model_name]))
-    return {"tfidf": tfidf, "scaler": scaler, "model": model}
+def features_to_vector(features):
+    return [features[name] for name in FEATURE_ORDER]
 
 
-def predict_ml_prior(text, nlp, nrc_dict, artifacts):
-    doc = nlp(text)
-    lemmatized = " ".join([t.lemma_ for t in doc if not t.is_stop])
+def train_ml_prior(feature_rows, scores, alpha=1.0):
+    X = np.array([features_to_vector(f) for f in feature_rows])
+    y = np.array(scores)
+    model = Ridge(alpha=alpha)
+    model.fit(X, y)
+    return model
 
-    l1_df = compute_layer1_semantic(pd.Series([lemmatized]), nrc_dict)
-    l2_df = compute_layer2_lexical(pd.Series([lemmatized]))
-    l3_df = compute_layer3_behavioral([text], nlp)
 
-    tfidf_vec = artifacts["tfidf"].transform([lemmatized])
-    tfidf_df = pd.DataFrame(
-        tfidf_vec.toarray(),
-        columns=[f"tfidf_{i}" for i in range(tfidf_vec.shape[1])],
-    )
-
-    combined = pd.concat([l1_df, l2_df, l3_df, tfidf_df], axis=1)
-    X = artifacts["scaler"].transform(combined)
-
-    score = float(artifacts["model"].predict(X)[0])
+def predict_ml_prior(text, nlp, nrc_dict, model):
+    features = extract_features_for_text(text, nlp, nrc_dict)
+    X = np.array([features_to_vector(features)])
+    score = float(model.predict(X)[0])
     score = min(99.0, max(0.0, score))
     tier, label = assign_tier(score)
     return {"score": round(score, 1), "tier": tier, "tier_label": label}
@@ -659,10 +720,10 @@ Expected: PASS (4 tests)
 
 ```bash
 git add src/agent/tools/ml_prior.py tests/agent/tools/test_ml_prior.py
-git commit -m "feat: add ML-prior tool wrapping existing trained classical models"
+git commit -m "feat: add self-contained ML-prior tool (Ridge on 8-feature contract)"
 ```
 
-*(Note: these tests exercise the currently-trained `models/*.pkl` artifacts, which were trained before the stratified-augmentation dataset was completed. Retraining them on `train_augmented.csv` once its coverage is improved — regenerate `train_features.csv` via `extract_classical_features.py`, then rerun `train_classical_models.py` — is a manual follow-up step, not part of this task; `load_ml_prior_artifacts` will pick up the new `.pkl` files automatically once they're regenerated, no code change needed.)*
+*(Note: `train_ml_prior` is exercised here on synthetic data for a fast, deterministic test. Training it on real project data — e.g. via `extract_features_for_text` over `data/train_clean.csv` rows — and persisting the fitted model is a manual follow-up step once the wider integration direction with the project's other pipeline is decided.)*
 
 ---
 
@@ -856,6 +917,7 @@ git commit -m "feat: add RAG retrieval tool over exemplar and theory corpora"
 
 ## Plan Self-Review Notes
 
-- **Spec coverage:** Design spec Section 5.1 (classical extractor reuse) → Task 1. Section 5.2 (Fuzzy Logic Engine) → Task 2, implemented with hand-rolled NumPy instead of scikit-fuzzy per the spec's own flagged fallback (Section 9 open risks) — a deliberate, evidence-based deviation, not an oversight. Section 5.3 (ML-prior tool) → Task 3, corrected to match the actual current codebase (TF-IDF + classical layers only, no BERT) rather than the spec's stated classical+BERT fusion — the spec was written before re-confirming the current `backend/main.py`/`train_classical_models.py` state. Section 5.4 (RAG retrieval) → Task 4. The Agent Orchestrator that calls these four tools together is explicitly out of scope — that's Plan 3.
+- **Spec coverage:** Design spec Section 5.1 (classical extractor reuse) → Task 1, reimplemented self-contained rather than reusing `src.extract_classical_features` (see revision note below). Section 5.2 (Fuzzy Logic Engine) → Task 2, implemented with hand-rolled NumPy instead of scikit-fuzzy per the spec's own flagged fallback (Section 9 open risks) — a deliberate, evidence-based deviation, not an oversight. Section 5.3 (ML-prior tool) → Task 3, substantially descoped to a self-contained Ridge regressor on this plan's own 8 features (see revision note below) rather than the spec's classical+BERT-fusion or the (also since-corrected) classical-only TF-IDF design. Section 5.4 (RAG retrieval) → Task 4, unaffected. The Agent Orchestrator that calls these four tools together is explicitly out of scope — that's Plan 3.
 - **No placeholders:** every task has complete, runnable code; no TBD/TODO markers.
-- **Type/interface consistency:** `extract_features_for_text`'s returned dict keys (Task 1) are exactly the keys `compute_inputs` (Task 2) and `predict_ml_prior`'s internal feature computation (Task 3) expect/produce. `assign_tier`'s `(int, str)` return shape (Plan 1) is used identically in `fuzzy_engine.py` and `ml_prior.py`. `embed_corpus`'s `.encode(list[str])` embedder contract (Plan 1's `build_corpus.py`) is reused identically by `rag_retrieval.py`'s `retrieve_similar_exemplars`/`retrieve_relevant_theory`.
+- **Type/interface consistency:** `extract_features_for_text`'s returned dict keys (Task 1) are exactly the keys `compute_inputs` (Task 2) and `features_to_vector`/`FEATURE_ORDER` (Task 3) expect/produce. `assign_tier`'s `(int, str)` return shape (Plan 1) is used identically in `fuzzy_engine.py` and `ml_prior.py`. `embed_corpus`'s `.encode(list[str])` embedder contract (Plan 1's `build_corpus.py`) is reused identically by `rag_retrieval.py`'s `retrieve_similar_exemplars`/`retrieve_relevant_theory`.
+- **Mid-execution revision:** Tasks 1 and 3 were rewritten after Task 1's implementer correctly stopped (NEEDS_CONTEXT) upon discovering `src/extract_classical_features.py` and `backend/main.py` had changed again since this plan was scoped (both are uncommitted, actively-edited-in-parallel files, not a stable dependency). Per explicit user direction, both tasks were rewritten to be fully self-contained under `src/agent/tools/`, with no import from either volatile file. This is reflected throughout the plan text above (Global Constraints, Architecture, Task 1, Task 3) — there is no separate "old version" of these tasks left inconsistent with this note.
