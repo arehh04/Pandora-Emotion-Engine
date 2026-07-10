@@ -6,18 +6,37 @@ context/client construction and is mounted onto the real app with a single
 import os
 
 import spacy
+from dotenv import load_dotenv
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from src.agent.context import load_rag_context, train_ml_prior_from_data
-from src.agent.openrouter_client import build_client
+from src.agent.openrouter_client import DEEPSEEK_BASE_URL, build_client
 from src.agent.orchestrator import run_agent
 from src.agent.tools.classical_features import load_nrc_lexicon
+
+load_dotenv()
 
 router = APIRouter()
 
 _cached_ctx = None
 _cached_client_and_models = None
+
+
+def _build_deepseek_config(api_key):
+    client = build_client(api_key, base_url=os.environ.get("DEEPSEEK_BASE_URL", DEEPSEEK_BASE_URL))
+    models_env = os.environ.get("DEEPSEEK_MODELS", "deepseek-v4-flash")
+    models = [m.strip() for m in models_env.split(",") if m.strip()]
+    extra_params = {"reasoning_effort": "high", "thinking": {"type": "enabled"}}
+    return client, models, extra_params
+
+
+def _build_openrouter_config(api_key):
+    client = build_client(api_key)
+    models_env = os.environ.get("OPENROUTER_MODELS", "")
+    models = [m.strip() for m in models_env.split(",") if m.strip()]
+    extra_params = {"reasoning": {"enabled": True}}
+    return client, models, extra_params
 
 
 def get_agent_context():
@@ -32,13 +51,17 @@ def get_agent_context():
 
 
 def get_agent_client_and_models():
+    """DeepSeek is the primary provider when DEEPSEEK_API_KEY is set (v4-flash,
+    thinking mode enabled, high reasoning effort); falls back to whatever
+    OPENROUTER_API_KEY/OPENROUTER_MODELS are configured otherwise.
+    """
     global _cached_client_and_models
     if _cached_client_and_models is None:
-        api_key = os.environ.get("OPENROUTER_API_KEY", "")
-        client = build_client(api_key)
-        models_env = os.environ.get("OPENROUTER_MODELS", "")
-        models = [m.strip() for m in models_env.split(",") if m.strip()]
-        _cached_client_and_models = (client, models)
+        deepseek_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        if deepseek_key:
+            _cached_client_and_models = _build_deepseek_config(deepseek_key)
+        else:
+            _cached_client_and_models = _build_openrouter_config(os.environ.get("OPENROUTER_API_KEY", ""))
     return _cached_client_and_models
 
 
@@ -55,8 +78,8 @@ def predict_agent(
     if not req.text.strip():
         return {"error": "Empty text"}
 
-    client, models = client_and_models
+    client, models, extra_params = client_and_models
     if not models:
-        return {"error": "No OPENROUTER_MODELS configured. Set the OPENROUTER_MODELS environment variable."}
+        return {"error": "No models configured. Set DEEPSEEK_API_KEY (preferred) or OPENROUTER_API_KEY/OPENROUTER_MODELS."}
 
-    return run_agent(client, models, ctx, req.text)
+    return run_agent(client, models, ctx, req.text, extra_params=extra_params)

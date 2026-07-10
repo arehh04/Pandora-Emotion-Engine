@@ -5,8 +5,15 @@ import spacy
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from backend.agent_router import router, get_agent_context, get_agent_client_and_models
-from src.agent.openrouter_client import build_client
+import backend.agent_router as agent_router_module
+from backend.agent_router import (
+    router,
+    get_agent_context,
+    get_agent_client_and_models,
+    _build_deepseek_config,
+    _build_openrouter_config,
+)
+from src.agent.openrouter_client import DEEPSEEK_BASE_URL, OPENROUTER_BASE_URL, build_client
 from src.agent.tools.classical_features import load_nrc_lexicon
 from src.agent.tools.ml_prior import train_ml_prior
 
@@ -38,7 +45,7 @@ def _make_test_app():
 def test_predict_agent_returns_error_on_empty_text():
     app = _make_test_app()
     app.dependency_overrides[get_agent_context] = lambda: _TEST_CTX
-    app.dependency_overrides[get_agent_client_and_models] = lambda: (None, ["fake-model"])
+    app.dependency_overrides[get_agent_client_and_models] = lambda: (None, ["fake-model"], None)
     client = TestClient(app)
 
     response = client.post("/predict-agent", json={"text": "   "})
@@ -50,7 +57,7 @@ def test_predict_agent_returns_error_on_empty_text():
 def test_predict_agent_returns_error_when_no_models_configured():
     app = _make_test_app()
     app.dependency_overrides[get_agent_context] = lambda: _TEST_CTX
-    app.dependency_overrides[get_agent_client_and_models] = lambda: (None, [])
+    app.dependency_overrides[get_agent_client_and_models] = lambda: (None, [], None)
     client = TestClient(app)
 
     response = client.post("/predict-agent", json={"text": "hello"})
@@ -77,7 +84,7 @@ def test_predict_agent_returns_agent_result_on_success():
     fake_client = build_client("fake-key", transport=httpx.MockTransport(handler))
     app = _make_test_app()
     app.dependency_overrides[get_agent_context] = lambda: _TEST_CTX
-    app.dependency_overrides[get_agent_client_and_models] = lambda: (fake_client, ["fake-model"])
+    app.dependency_overrides[get_agent_client_and_models] = lambda: (fake_client, ["fake-model"], None)
     client = TestClient(app)
 
     response = client.post("/predict-agent", json={"text": "I love parties!"})
@@ -88,6 +95,37 @@ def test_predict_agent_returns_agent_result_on_success():
     assert body["degraded"] is False
 
 
+def test_build_deepseek_config_uses_v4_flash_with_high_reasoning_effort():
+    client, models, extra_params = _build_deepseek_config("fake-deepseek-key")
+
+    assert str(client.base_url).rstrip("/") == DEEPSEEK_BASE_URL
+    assert models == ["deepseek-v4-flash"]
+    assert extra_params == {"reasoning_effort": "high", "thinking": {"type": "enabled"}}
+
+
+def test_build_openrouter_config_reads_models_env(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_MODELS", "model-a,model-b")
+
+    client, models, extra_params = _build_openrouter_config("fake-openrouter-key")
+
+    assert str(client.base_url).rstrip("/") == OPENROUTER_BASE_URL
+    assert models == ["model-a", "model-b"]
+    assert extra_params == {"reasoning": {"enabled": True}}
+
+
+def test_get_agent_client_and_models_prefers_deepseek(monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "fake-deepseek-key")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake-openrouter-key")
+    monkeypatch.setattr(agent_router_module, "_cached_client_and_models", None)
+
+    client, models, extra_params = get_agent_client_and_models()
+
+    assert models == ["deepseek-v4-flash"]
+    assert "thinking" in extra_params
+
+    monkeypatch.setattr(agent_router_module, "_cached_client_and_models", None)
+
+
 def test_predict_agent_degrades_when_api_fails():
     def handler(request):
         return httpx.Response(500, json={"error": "down"})
@@ -95,7 +133,7 @@ def test_predict_agent_degrades_when_api_fails():
     fake_client = build_client("fake-key", transport=httpx.MockTransport(handler))
     app = _make_test_app()
     app.dependency_overrides[get_agent_context] = lambda: _TEST_CTX
-    app.dependency_overrides[get_agent_client_and_models] = lambda: (fake_client, ["fake-model"])
+    app.dependency_overrides[get_agent_client_and_models] = lambda: (fake_client, ["fake-model"], None)
     client = TestClient(app)
 
     response = client.post("/predict-agent", json={"text": "I love parties and talking to everyone!"})
