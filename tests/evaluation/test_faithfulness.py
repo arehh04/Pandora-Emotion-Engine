@@ -53,3 +53,15 @@ def test_faithfulness_ignores_tool_calls_that_errored():
     }
 
     assert check_rationale_faithfulness(agent_result) is True
+
+
+def test_faithfulness_false_when_rationale_only_echoes_generic_tool_word():
+    agent_result = {
+        "rationale": "Based on my overall assessment of the writing, this seems extraverted.",
+        "trace": [
+            {"tool": "ml_prior_assessment", "arguments": {"text": "x"},
+             "result": {"score": 40.0, "tier": 3, "tier_label": "Balanced (Introspective)"}},
+        ],
+    }
+
+    assert check_rationale_faithfulness(agent_result) is False

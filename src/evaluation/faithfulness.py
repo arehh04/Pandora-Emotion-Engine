@@ -5,6 +5,8 @@ spot-checking, per the design spec's rationale-faithfulness requirement —
 this function does not replace that manual review, it triages it.
 """
 
+_GENERIC_TOOL_WORDS = {"assessment", "retrieve", "relevant", "similar", "theory", "logic"}
+
 
 def check_rationale_faithfulness(agent_result):
     rationale = (agent_result.get("rationale") or "").lower()
@@ -25,7 +27,8 @@ def check_rationale_faithfulness(agent_result):
                 return True
 
         tool_words = step["tool"].replace("_", " ").split()
-        if any(word in rationale for word in tool_words if len(word) > 4):
+        meaningful_words = [w for w in tool_words if len(w) > 4 and w not in _GENERIC_TOOL_WORDS]
+        if any(word in rationale for word in meaningful_words):
             return True
 
     if not has_usable_step:
