@@ -134,3 +134,65 @@ def test_degraded_result_survives_ml_prior_failure():
     assert result["degraded"] is True
     assert 0.0 <= result["continuous_score_estimate"] <= 99.0
     assert 1 <= result["tier"] <= 6
+
+
+def test_run_agent_restricts_tool_schemas_sent_to_the_api():
+    sent_tool_names = []
+
+    def handler(request):
+        import json as _json
+        body = _json.loads(request.content)
+        sent_tool_names.append([t["function"]["name"] for t in body.get("tools", [])])
+        return _assistant_tool_call_response("call_1", "submit_assessment", {
+            "tier": 3, "continuous_score_estimate": 40.0, "confidence": "medium",
+            "rationale": "Ambiguous signal.",
+        })
+
+    client = build_client("fake-key", transport=httpx.MockTransport(handler))
+    ctx = _build_test_context()
+
+    run_agent(client, ["fake-model"], ctx, "some text", enabled_tools={"fuzzy_logic_assessment"})
+
+    assert set(sent_tool_names[0]) == {"fuzzy_logic_assessment", "submit_assessment"}
+
+
+def test_run_agent_gracefully_refuses_a_disabled_tool_call():
+    turns = {"n": 0}
+
+    def handler(request):
+        turns["n"] += 1
+        if turns["n"] == 1:
+            return _assistant_tool_call_response("call_1", "ml_prior_assessment", {"text": "hi"})
+        return _assistant_tool_call_response("call_2", "submit_assessment", {
+            "tier": 3, "continuous_score_estimate": 40.0, "confidence": "medium",
+            "rationale": "Ambiguous signal.",
+        })
+
+    client = build_client("fake-key", transport=httpx.MockTransport(handler))
+    ctx = _build_test_context()
+
+    result = run_agent(client, ["fake-model"], ctx, "some text", enabled_tools={"fuzzy_logic_assessment"})
+
+    assert result["degraded"] is False
+    assert result["trace"][0]["tool"] == "ml_prior_assessment"
+    assert "disabled" in result["trace"][0]["result"]["error"]
+
+
+def test_run_agent_enabled_tools_none_still_exposes_all_tools():
+    sent_tool_names = []
+
+    def handler(request):
+        import json as _json
+        body = _json.loads(request.content)
+        sent_tool_names.append([t["function"]["name"] for t in body.get("tools", [])])
+        return _assistant_tool_call_response("call_1", "submit_assessment", {
+            "tier": 3, "continuous_score_estimate": 40.0, "confidence": "medium",
+            "rationale": "Ambiguous signal.",
+        })
+
+    client = build_client("fake-key", transport=httpx.MockTransport(handler))
+    ctx = _build_test_context()
+
+    run_agent(client, ["fake-model"], ctx, "some text")
+
+    assert len(sent_tool_names[0]) == 5

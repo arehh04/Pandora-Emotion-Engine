@@ -56,16 +56,22 @@ def _degraded_result(text, ctx, error):
         }
 
 
-def run_agent(client, models, ctx, text, max_iterations=6, extra_params=None):
+def run_agent(client, models, ctx, text, max_iterations=6, extra_params=None, enabled_tools=None):
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": f"Assess the Extraversion of this text:\n\n{text}"},
     ]
     trace = []
 
+    if enabled_tools is None:
+        available_schemas = TOOL_SCHEMAS
+    else:
+        allowed_names = set(enabled_tools) | {"submit_assessment"}
+        available_schemas = [s for s in TOOL_SCHEMAS if s["function"]["name"] in allowed_names]
+
     for _ in range(max_iterations):
         try:
-            response = call_with_fallback(client, models, messages, tools=TOOL_SCHEMAS, extra_params=extra_params)
+            response = call_with_fallback(client, models, messages, tools=available_schemas, extra_params=extra_params)
         except Exception as e:
             return _degraded_result(text, ctx, str(e))
 
@@ -95,7 +101,10 @@ def run_agent(client, models, ctx, text, max_iterations=6, extra_params=None):
                         "error": None,
                     }
 
-                result = dispatch_tool_call(name, arguments, ctx)
+                if enabled_tools is not None and name != "submit_assessment" and name not in enabled_tools:
+                    result = {"error": f"Tool '{name}' is disabled for this evaluation variant."}
+                else:
+                    result = dispatch_tool_call(name, arguments, ctx)
                 trace.append({"tool": name, "arguments": arguments, "result": result})
                 messages.append({
                     "role": "tool",
