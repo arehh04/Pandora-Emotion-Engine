@@ -19,7 +19,14 @@ EQ_TIER_BINS = [
 def assign_eq_tier(score):
     if not (0 <= score <= 99):
         raise ValueError(f"score must be within 0-99, got {score}")
-    for low, high, tier_num, label in EQ_TIER_BINS:
-        if low <= score <= high:
+    # Bin edges are stored as adjacent integers (e.g. (42, 52) then (53, 60)),
+    # which is contiguous for integer scores but leaves a real-valued gap
+    # (e.g. 52.4) between them. Branch/overall EQ proxy scores are weighted
+    # sums of floats, so treat each bin's upper edge as exclusive of the next
+    # bin's lower edge (the last bin stays closed at its own high bound) to
+    # cover the full continuous 0-99 range with no gaps.
+    for i, (low, high, tier_num, label) in enumerate(EQ_TIER_BINS):
+        next_low = EQ_TIER_BINS[i + 1][0] if i + 1 < len(EQ_TIER_BINS) else high + 1
+        if low <= score < next_low:
             return tier_num, label
     raise ValueError(f"score {score} did not match any tier bin")
