@@ -1,29 +1,13 @@
 import json
-import os
 
 import httpx
-import spacy
 
-from src.agent.tools.classical_features import load_nrc_lexicon
-from src.agent.tools.ml_prior import train_ml_prior
 from src.agent.openrouter_client import build_client
-from src.agent.orchestrator import run_agent, label_for_tier, SYSTEM_PROMPT
+from src.agent.orchestrator import label_for_tier, run_agent
 
 
 def _build_test_context():
-    nlp = spacy.load("en_core_web_sm")
-    nrc_dict = load_nrc_lexicon(os.path.join("data", "NRC-Emotion-Lexicon-Senselevel-v0.92.txt"))
-    feature_rows = [
-        {"positive": 0.3, "negative": 0.0, "semantic_polarity": 0.9, "behav_exclamation_ratio": 0.2,
-         "behav_question_ratio": 0.0, "behav_verb_ratio": 0.3, "behav_1st_sg_pronoun_ratio": 0.0,
-         "behav_1st_pl_pronoun_ratio": 0.2},
-        {"positive": 0.0, "negative": 0.3, "semantic_polarity": -0.9, "behav_exclamation_ratio": 0.0,
-         "behav_question_ratio": 0.0, "behav_verb_ratio": 0.05, "behav_1st_sg_pronoun_ratio": 0.2,
-         "behav_1st_pl_pronoun_ratio": 0.0},
-    ]
-    scores = [90.0, 10.0]
-    ml_model = train_ml_prior(feature_rows, scores)
-    return {"nlp": nlp, "nrc_dict": nrc_dict, "ml_model": ml_model, "rag": None}
+    return {"rag": None}
 
 
 def _assistant_tool_call_response(call_id, name, arguments):
@@ -48,7 +32,7 @@ def test_run_agent_completes_via_tool_call_then_submit():
     def handler(request):
         turns["n"] += 1
         if turns["n"] == 1:
-            return _assistant_tool_call_response("call_1", "fuzzy_logic_assessment", {"text": "I love parties!"})
+            return _assistant_tool_call_response("call_1", "retrieve_similar_exemplars", {"text": "I love parties!"})
         return _assistant_tool_call_response("call_2", "submit_assessment", {
             "tier": 6, "continuous_score_estimate": 92.0, "confidence": "high",
             "rationale": "Strongly positive, high-energy language.",
@@ -63,12 +47,12 @@ def test_run_agent_completes_via_tool_call_then_submit():
     assert result["tier"] == 6
     assert result["tier_label"] == "Highly Extraverted"
     assert len(result["trace"]) == 1
-    assert result["trace"][0]["tool"] == "fuzzy_logic_assessment"
+    assert result["trace"][0]["tool"] == "retrieve_similar_exemplars"
 
 
 def test_run_agent_stops_after_max_iterations_without_submit():
     def handler(request):
-        return _assistant_tool_call_response("call_x", "ml_prior_assessment", {"text": "hi"})
+        return _assistant_tool_call_response("call_x", "retrieve_relevant_theory", {"text": "hi"})
 
     client = build_client("fake-key", transport=httpx.MockTransport(handler))
     ctx = _build_test_context()
@@ -90,8 +74,8 @@ def test_run_agent_degrades_gracefully_when_api_fails():
 
     assert result["degraded"] is True
     assert result["error"] is not None
-    assert 0.0 <= result["continuous_score_estimate"] <= 99.0
-    assert 1 <= result["tier"] <= 6
+    assert result["continuous_score_estimate"] == 50.0
+    assert result["tier"] == 4
 
 
 def test_run_agent_degrades_gracefully_on_malformed_response():
@@ -105,8 +89,8 @@ def test_run_agent_degrades_gracefully_on_malformed_response():
 
     assert result["degraded"] is True
     assert result["error"] is not None
-    assert 0.0 <= result["continuous_score_estimate"] <= 99.0
-    assert 1 <= result["tier"] <= 6
+    assert result["continuous_score_estimate"] == 50.0
+    assert result["tier"] == 4
 
 
 def test_run_agent_clamps_out_of_range_submitted_score():
@@ -124,24 +108,23 @@ def test_run_agent_clamps_out_of_range_submitted_score():
     assert result["continuous_score_estimate"] == 99.0
 
 
-def test_degraded_result_survives_ml_prior_failure():
+def test_degraded_result_returns_a_neutral_default():
     from src.agent.orchestrator import _degraded_result
 
-    broken_ctx = {"nlp": None, "nrc_dict": None, "ml_model": None}  # will make predict_ml_prior raise
-
-    result = _degraded_result("some text", broken_ctx, "original error")
+    result = _degraded_result("some text", {"rag": None}, "original error")
 
     assert result["degraded"] is True
-    assert 0.0 <= result["continuous_score_estimate"] <= 99.0
-    assert 1 <= result["tier"] <= 6
+    assert result["tier"] == 4
+    assert result["tier_label"] == label_for_tier(4)
+    assert result["continuous_score_estimate"] == 50.0
+    assert result["error"] == "original error"
 
 
 def test_run_agent_restricts_tool_schemas_sent_to_the_api():
     sent_tool_names = []
 
     def handler(request):
-        import json as _json
-        body = _json.loads(request.content)
+        body = json.loads(request.content)
         sent_tool_names.append([t["function"]["name"] for t in body.get("tools", [])])
         return _assistant_tool_call_response("call_1", "submit_assessment", {
             "tier": 3, "continuous_score_estimate": 40.0, "confidence": "medium",
@@ -151,9 +134,9 @@ def test_run_agent_restricts_tool_schemas_sent_to_the_api():
     client = build_client("fake-key", transport=httpx.MockTransport(handler))
     ctx = _build_test_context()
 
-    run_agent(client, ["fake-model"], ctx, "some text", enabled_tools={"fuzzy_logic_assessment"})
+    run_agent(client, ["fake-model"], ctx, "some text", enabled_tools={"retrieve_similar_exemplars"})
 
-    assert set(sent_tool_names[0]) == {"fuzzy_logic_assessment", "submit_assessment"}
+    assert set(sent_tool_names[0]) == {"retrieve_similar_exemplars", "submit_assessment"}
 
 
 def test_run_agent_gracefully_refuses_a_disabled_tool_call():
@@ -162,7 +145,7 @@ def test_run_agent_gracefully_refuses_a_disabled_tool_call():
     def handler(request):
         turns["n"] += 1
         if turns["n"] == 1:
-            return _assistant_tool_call_response("call_1", "ml_prior_assessment", {"text": "hi"})
+            return _assistant_tool_call_response("call_1", "retrieve_relevant_theory", {"text": "hi"})
         return _assistant_tool_call_response("call_2", "submit_assessment", {
             "tier": 3, "continuous_score_estimate": 40.0, "confidence": "medium",
             "rationale": "Ambiguous signal.",
@@ -171,10 +154,10 @@ def test_run_agent_gracefully_refuses_a_disabled_tool_call():
     client = build_client("fake-key", transport=httpx.MockTransport(handler))
     ctx = _build_test_context()
 
-    result = run_agent(client, ["fake-model"], ctx, "some text", enabled_tools={"fuzzy_logic_assessment"})
+    result = run_agent(client, ["fake-model"], ctx, "some text", enabled_tools={"retrieve_similar_exemplars"})
 
     assert result["degraded"] is False
-    assert result["trace"][0]["tool"] == "ml_prior_assessment"
+    assert result["trace"][0]["tool"] == "retrieve_relevant_theory"
     assert "disabled" in result["trace"][0]["result"]["error"]
 
 
@@ -182,8 +165,7 @@ def test_run_agent_enabled_tools_none_still_exposes_all_tools():
     sent_tool_names = []
 
     def handler(request):
-        import json as _json
-        body = _json.loads(request.content)
+        body = json.loads(request.content)
         sent_tool_names.append([t["function"]["name"] for t in body.get("tools", [])])
         return _assistant_tool_call_response("call_1", "submit_assessment", {
             "tier": 3, "continuous_score_estimate": 40.0, "confidence": "medium",
@@ -195,4 +177,4 @@ def test_run_agent_enabled_tools_none_still_exposes_all_tools():
 
     run_agent(client, ["fake-model"], ctx, "some text")
 
-    assert len(sent_tool_names[0]) == 5
+    assert len(sent_tool_names[0]) == 3

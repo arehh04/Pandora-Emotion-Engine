@@ -31,8 +31,6 @@
 
     function toolLabel(tool: string) {
         const labels: Record<string, string> = {
-            fuzzy_logic_assessment: "Fuzzy Logic Engine",
-            ml_prior_assessment: "ML-Prior Model",
             retrieve_similar_exemplars: "RAG: Similar Examples",
             retrieve_relevant_theory: "RAG: Psychology Theory",
         };
@@ -42,12 +40,6 @@
     function toolSummary(step: any) {
         const r = step.result;
         if (r?.error) return r.error;
-        if (step.tool === "fuzzy_logic_assessment") {
-            return `Score ${r.fuzzy_score} → Tier ${r.tier} (${r.tier_label}), ${r.fired_rules?.length ?? 0} rule(s) fired`;
-        }
-        if (step.tool === "ml_prior_assessment") {
-            return `Score ${r.score} → Tier ${r.tier} (${r.tier_label})`;
-        }
         if (r?.results) {
             return `${r.results.length} result(s) retrieved`;
         }
