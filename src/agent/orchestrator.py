@@ -56,7 +56,7 @@ def _degraded_result(text, ctx, error):
         }
 
 
-def run_agent(client, models, ctx, text, max_iterations=6):
+def run_agent(client, models, ctx, text, max_iterations=6, extra_params=None):
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": f"Assess the Extraversion of this text:\n\n{text}"},
@@ -65,7 +65,7 @@ def run_agent(client, models, ctx, text, max_iterations=6):
 
     for _ in range(max_iterations):
         try:
-            response = call_with_fallback(client, models, messages, tools=TOOL_SCHEMAS)
+            response = call_with_fallback(client, models, messages, tools=TOOL_SCHEMAS, extra_params=extra_params)
         except Exception as e:
             return _degraded_result(text, ctx, str(e))
 

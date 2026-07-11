@@ -14,6 +14,45 @@
     let analysisResult: any = $state(null);
 
     const API_URL = "https://arehhham-pandora.hf.space/predict";
+    // Local dev backend only — the agent endpoint isn't deployed to the
+    // production HF Space yet, so this only works when running
+    // `uvicorn backend.main:app --host 127.0.0.1 --port 8000` locally.
+    const AGENT_API_URL = "http://127.0.0.1:8000/predict-agent";
+
+    function isAgentMode() {
+        return selectedModel === "LLM Agent";
+    }
+
+    function confidenceColor(confidence: string) {
+        if (confidence === "high") return "#00E676";
+        if (confidence === "medium") return "#FFD700";
+        return "#FF9800";
+    }
+
+    function toolLabel(tool: string) {
+        const labels: Record<string, string> = {
+            fuzzy_logic_assessment: "Fuzzy Logic Engine",
+            ml_prior_assessment: "ML-Prior Model",
+            retrieve_similar_exemplars: "RAG: Similar Examples",
+            retrieve_relevant_theory: "RAG: Psychology Theory",
+        };
+        return labels[tool] || tool;
+    }
+
+    function toolSummary(step: any) {
+        const r = step.result;
+        if (r?.error) return r.error;
+        if (step.tool === "fuzzy_logic_assessment") {
+            return `Score ${r.fuzzy_score} → Tier ${r.tier} (${r.tier_label}), ${r.fired_rules?.length ?? 0} rule(s) fired`;
+        }
+        if (step.tool === "ml_prior_assessment") {
+            return `Score ${r.score} → Tier ${r.tier} (${r.tier_label})`;
+        }
+        if (r?.results) {
+            return `${r.results.length} result(s) retrieved`;
+        }
+        return JSON.stringify(r);
+    }
 
     async function commenceAnalysis() {
         if (!inputText.trim()) {
@@ -22,16 +61,28 @@
         }
         errorMsg = "";
         isLoading = true;
-        
+
         try {
-            const res = await fetch(API_URL, {
+            const agent = isAgentMode();
+            const url = agent ? AGENT_API_URL : API_URL;
+            const body = agent
+                ? { text: inputText }
+                : { text: inputText, model: selectedModel };
+
+            const res = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text: inputText, model: selectedModel })
+                body: JSON.stringify(body)
             });
             if (!res.ok) throw new Error("API Request Failed");
-            analysisResult = await res.json();
-            
+            const data = await res.json();
+
+            if (data.error) {
+                errorMsg = data.error;
+                return;
+            }
+            analysisResult = data;
+
             // Open Modal
             isModalOpen = true;
             document.body.style.overflow = 'hidden';
@@ -316,7 +367,13 @@
                         <option value="Ridge Regression">Ridge Regression (Baseline)</option>
                         <option value="XGBoost">XGBoost</option>
                         <option value="Random Forest">Random Forest</option>
+                        <option value="LLM Agent">🤖 LLM Agent (Experimental, local only)</option>
                     </select>
+                    {#if isAgentMode()}
+                        <div style="color:#00e5ff; font-size:0.8rem; margin-top:0.5rem; font-style:italic;">
+                            Requires the local backend running at 127.0.0.1:8000 — not available on the deployed demo.
+                        </div>
+                    {/if}
                 </div>
 
                 {#if errorMsg}
@@ -360,8 +417,64 @@
         
         <!-- The area that will be converted to PDF -->
         <div id="exportable-area">
+            {#if analysisResult.trace !== undefined}
+            <!-- AGENT TRACE PANEL -->
+            <div class="diagnosis-container" style="grid-template-columns: 1fr; flex-direction: column; padding: 2rem;">
+                <div class="profile-header" style="margin-bottom: 2rem; text-align: left;">
+                    <div style="color:#00e5ff; font-size:1.2rem; letter-spacing:0.1em; text-transform:uppercase; font-family:'Cinzel', serif; font-weight:700;">
+                        🤖 AGENT ASSESSMENT: {analysisResult.tier_label?.toUpperCase()} (Tier {analysisResult.tier}/6 · Score {analysisResult.continuous_score_estimate})
+                    </div>
+                    <div style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                        <span class="ember-tag" style="color:{confidenceColor(analysisResult.confidence)}; background:rgba(0,0,0,0.3); border-color:{confidenceColor(analysisResult.confidence)};">
+                            Confidence: {analysisResult.confidence}
+                        </span>
+                        {#if analysisResult.degraded}
+                            <span class="ember-tag ember-orange">⚠ Degraded — fell back to ML-prior tool</span>
+                        {/if}
+                    </div>
+                    {#if analysisResult.error}
+                        <div style="color:#b0929c; font-size:0.85rem; margin-top:0.8rem; font-style:italic;">
+                            Reason: {analysisResult.error}
+                        </div>
+                    {/if}
+                </div>
+
+                <div class="emotional-signature" style="margin-bottom: 2rem; text-align: left; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="color:#00e5ff; font-size:1.1rem; letter-spacing:0.1em; text-transform:uppercase; font-family:'Cinzel', serif; font-weight:700; margin-bottom:1rem;">
+                        🧠 RATIONALE
+                    </div>
+                    <div style="color:#e8d5db; font-size:0.95rem; line-height:1.7; font-weight:300;">
+                        {analysisResult.rationale}
+                    </div>
+                </div>
+
+                {#if analysisResult.trace.length > 0}
+                <div class="shap-container" style="border: none; padding: 0; text-align: left;">
+                    <div style="color:#00e5ff; font-size:1.1rem; letter-spacing:0.1em; text-transform:uppercase; font-family:'Cinzel', serif; font-weight:700; margin-bottom:1rem;">
+                        🔎 AGENT TRACE ({analysisResult.trace.length} tool call{analysisResult.trace.length === 1 ? '' : 's'})
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.9rem;">
+                        {#each analysisResult.trace as step, i}
+                            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(212,175,55,0.2); border-radius: 6px; padding: 1rem 1.2rem;">
+                                <div style="color:#d4af37; font-family:'Cinzel', serif; font-weight:700; font-size:0.95rem; margin-bottom:0.4rem;">
+                                    {i + 1}. {toolLabel(step.tool)}
+                                </div>
+                                <div style="color:#b0929c; font-size:0.85rem; line-height:1.5;">
+                                    {toolSummary(step)}
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+                {:else}
+                <div style="color:#b0929c; font-size:0.9rem; font-style:italic; text-align:left;">
+                    No tools were called before this result was produced.
+                </div>
+                {/if}
+            </div>
+            {:else}
             <div class="diagnosis-container" style="flex-direction: column; padding: 2rem;">
-                
+
                 <!-- PROFILE HEADER -->
                 <div class="profile-header" style="margin-bottom: 2.5rem; text-align: left;">
                     <div style="color:#00e5ff; font-size:1.2rem; letter-spacing:0.1em; text-transform:uppercase; font-family:'Cinzel', serif; font-weight:700;">
@@ -500,6 +613,7 @@
                     </div>
                 </div>
             </div>
+            {/if}
         </div> <!-- /exportable-area -->
 
         <div class="action-container">
