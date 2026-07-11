@@ -29,14 +29,47 @@ To avoid self-evaluation bias, the LLM-judge evaluation layer routes to a **diff
 
 ## Optimization & Utility Reuse
 
-- **Parallel specialists**: LangGraph's `Send` fan-out runs the 4 specialist nodes concurrently; latency is bounded by the slowest specialist + coordinator time, not the sum of all calls.
+- **Parallel specialists**: verified directly against the installed `langgraph` (not assumed) that a compiled `StateGraph`'s plain synchronous `.invoke()` already runs independent same-superstep nodes concurrently — latency is bounded by the slowest specialist + coordinator time, not the sum of all calls, with no manual threading needed.
 - **Whole-result cache**: reuse `backend/main.py`'s existing `md5(model+text) → Bloom filter → Redis get/setex(86400s)` pattern verbatim, with a version tag baked into the hash key (e.g. `f"eq-v1::{text}"`) so a future prompt/graph change doesn't silently serve stale verdicts.
 - **Prompt-prefix caching**: static MSC framework/instructions/tool schemas first in each specialist's system prompt, input text last, so DeepSeek's provider-side prefix caching discounts the repeated static tokens across all specialist + coordinator + critic calls.
 - **Shared embedding**: embed the input text once (at graph entry, before fan-out) and pass the vector to all 4 specialists' retrieval calls, instead of each specialist re-embedding independently.
-- **One shared RAG collection per corpus type** (not four): tag exemplars/theory chunks with a `branch` metadata field (multi-tag where genuinely relevant to more than one branch) and filter via ChromaDB's `where=` at query time. Reuses Task 2's `build_hybrid_collection`/`hybrid_search` from Plan 6 completely unchanged.
 - **Per-branch model routing**: cheaper/faster model for more mechanical branches (e.g. Perceiving), the stronger reasoning-enabled model reserved for branches needing deeper inference (Understanding, Managing) — reuses the existing multi-model fallback list mechanism, just different lists per specialist node.
 - **Richer ablations**: Plan 5's `enabled_tools`/metrics/faithfulness machinery generalizes to "drop specialist X" and "with/without critique loop" ablations.
-- **Cost/token observability**: DeepSeek returns usage stats per call; surface per-specialist/coordinator/critic token cost in the frontend Agent Trace panel.
+- **Cost/token observability**: DeepSeek returns usage stats per call; surface per-specialist/coordinator/critic token cost in the frontend Agent Trace panel, and (see Observability section below) in LangSmith traces.
+
+## Revision (post-Plan-2): Vector Store, Reranking, Knowledge Graph, Observability, Ingestion
+
+The decisions below were made after Plans 1-2 were already built and reviewed (on ChromaDB), during a scope discussion of what belongs in this project vs. a full enterprise RAG reference architecture. They supersede the ChromaDB-specific wording earlier in this spec. **Plan 3 (Per-Branch RAG Tools) was written targeting ChromaDB but not yet executed — it must be revised to target LanceDB before implementation, not built on ChromaDB and migrated afterward.**
+
+### Vector store: LanceDB, not ChromaDB
+
+Switching the RAG backend from ChromaDB to **LanceDB**: embedded/serverless like ChromaDB (`lancedb.connect(path)`, no Docker, no server — preserves the "no infrastructure to run" property that made ChromaDB attractive), but with **native hybrid search** (vector + full-text, fused server-side) built in. This eliminates the hand-rolled BM25/RRF fusion code in `src/rag/hybrid_store.py` (`_tokenize`, `BM25Okapi`, the manual RRF score-merging) — LanceDB's own hybrid query API replaces it. Considered and rejected: Weaviate (same hybrid-search benefit, but requires a running service — loses the embedded property); Qdrant (local mode exists but its real strengths — sharding, quantization — don't matter at this data scale); Pinecone (cloud-only, reintroduces an external uptime/API-key dependency for a locally-run FYP); Supabase pgvector (also cloud-hosted by default, and would mean hand-rolling hybrid fusion *again* via Postgres full-text search — no net simplification, plus this project has no existing Postgres dependency to consolidate into).
+
+**Cost of switching:** Plans 1, 2, and 6's already-built/reviewed retrieval code (`src/rag/hybrid_store.py`, `src/rag/chunking.py` reuse, the Extraversion-era corpus) targeted ChromaDB. This is a real migration for the EQ-pivot side (Plan 3 onward) — the Extraversion-era `/predict-agent` pipeline (Plans 1-6 on `llm-agent-pivot/*`) is **not** touched by this switch and keeps using ChromaDB, since it's a separate, already-shipped/in-review system.
+
+### Reranking (cross-encoder)
+
+Retrieval becomes two-stage: retrieve top-50 candidates via LanceDB hybrid search, then rerank with a cross-encoder model (e.g. `sentence-transformers`' `cross-encoder/ms-marco-MiniLM-L-6-v2`, already in the same library family as the bi-encoder embedder already used) down to the top-8 actually handed to the specialist. This directly targets retrieval quality for the thing RAG exists for here — calibration-exemplar relevance — at the cost of one extra (small, local, non-LLM) model call per retrieval.
+
+### Metadata filtering
+
+Exemplars/theory chunks already carry `tier`, `branch`, `source` metadata (Plan 1). LanceDB's query API supports filtering on this metadata directly (e.g., restrict retrieval to only `tier >= 5` exemplars when calibrating a high-scoring text), a real, low-cost addition once the metadata already exists.
+
+### Knowledge Graph: Neo4j
+
+A **full Neo4j graph database** stores relationships between MSC theory concepts — the 4 branches, their sub-concepts (from the 16-entry theory corpus), and cross-branch relationships (e.g. "Using depends on Perceiving"). This is real infrastructure (a running Neo4j instance, Cypher queries) rather than a lightweight in-process graph — an explicit choice for this project's scope, made after the lighter NetworkX-only alternative was presented and declined. Feeds the coordinator/critic's cross-branch reasoning as an additional grounding source alongside the vector/hybrid retrieval.
+
+### Observability: LangSmith
+
+Since the orchestrator is now LangGraph-based, LangSmith (LangChain's companion tracing platform, designed specifically for LangGraph graphs) is added for run tracing/observability — a natural, low-setup-cost pairing (env vars + API key, no new infrastructure to run) rather than the heavier full OpenTelemetry stack from the original enterprise reference diagram, which was explicitly declined as disproportionate to this project's scope.
+
+### Ingestion pipeline (formalized, not expanded)
+
+The corpus has exactly 3 real sources: `data/train_set.csv` (Pandora rows), the hand-written MSC theory JSON, and 4 HF-fetched external emotion datasets. Rather than building generic loaders for formats nothing here uses (PDF/DOCX/website/YouTube/OCR — explicitly declined as solving a problem this project doesn't have), the ingestion pipeline formalizes these 3 existing sources with explicit stages: load → clean/normalize → dedup → version-stamp the resulting corpus artifact (so a rebuild is reproducible and traceable to which source-data version produced it) → hand off to the chunk/embed/store stage already designed above.
+
+### Proxy label enrichment: NRC lexicon
+
+The overall/per-branch proxy EQ label (see Data Foundation below) is enriched with NRC Word-Emotion-Association-Lexicon features (emotion-word density, positive/negative ratio) computed directly from each Pandora row's own text, in addition to the existing Big-Five-trait-based weights. This grounds the proxy label in what the text itself expresses, not just the person's separately-measured personality traits — a stronger, more defensible proxy for the thesis. This is an **offline data-labeling input only** — it does not reintroduce a live classical-feature tool into the agent's runtime reasoning, honoring the earlier "no traditional tools in the live agent" decision.
 
 ## Data Foundation
 
@@ -67,7 +100,7 @@ MSC branches don't map onto Big Five traits as cleanly as an overall score does.
 
 ### RAG corpus
 
-Replace the current 17-entry Extraversion theory corpus with an MSC theory corpus (~15-20 entries covering all 4 branches, same `id/topic/text/citation_needed` structure as `theory_corpus.py`). Exemplars per branch drawn from the real datasets where available (Perceiving, Understanding) and from `train_set.csv` scored via the proxy formula where not (Using, Managing) — all stored in the single branch-tagged hybrid ChromaDB+BM25 collection.
+Replace the current 17-entry Extraversion theory corpus with an MSC theory corpus (~15-20 entries covering all 4 branches, same `id/topic/text/citation_needed` structure as `theory_corpus.py`) — already built as a 16-entry corpus in Plan 1. Exemplars per branch drawn from the real datasets where available (Perceiving, Understanding) and from `train_set.csv` scored via the proxy formula where not (Using, Managing) — stored in **LanceDB** (superseding the ChromaDB+BM25 wording above — see the Revision section), with cross-encoder reranking on top of hybrid retrieval, and a companion Neo4j graph capturing MSC concept relationships.
 
 ### Tier scheme
 
@@ -79,7 +112,8 @@ New EQ tier scheme, structurally like `tiers.py`'s current 6 bins, but threshold
 - **Understanding**: partial ground truth via EmpatheticDialogues situation→emotion pairs, supplemented by LLM-judge rubric.
 - **Using / Managing**: LLM-judge rubric only, plus a weak correlation check against the proxy label.
 - **Overall EQ**: RMSE/MAE/R2 and tier accuracy/macro-F1/kappa against the proxy label on a held-out split of `train_set.csv`, reusing Plan 5's `compute_regression_metrics`/`compute_tier_metrics` unchanged.
-- **Ablations**: drop-one-specialist (marginal contribution to overall accuracy); with/without critique loop (does the reflection mechanism actually help, or just add cost). No classical-ML retraining — comparisons stay LLM-configuration vs LLM-configuration.
+- **Retrieval quality** (new, per the Revision section's reranker/LanceDB addition): Recall@k, Hit@k, MRR, nDCG against a small hand-labeled or heuristically-derived relevance set, measured both pre- and post-reranking to justify the cross-encoder's added cost.
+- **Ablations**: drop-one-specialist (marginal contribution to overall accuracy); with/without critique loop (does the reflection mechanism actually help, or just add cost); with/without reranking. No classical-ML retraining — comparisons stay LLM-configuration vs LLM-configuration.
 - **Judge model**: a different model/provider (OpenRouter) than the generator (DeepSeek), to avoid self-evaluation bias.
 
 ## Error Handling
@@ -97,11 +131,11 @@ New EQ tier scheme, structurally like `tiers.py`'s current 6 bins, but threshold
 
 ## Reuse vs. Rebuild Inventory (from Plans 1-6)
 
-**Reused as-is:** `call_with_fallback`/httpx client, hybrid ChromaDB+BM25+RRF store (`hybrid_store.py`), chunking (`chunking.py`), FastAPI endpoint pattern, `compute_regression_metrics`/`compute_tier_metrics`, `check_rationale_faithfulness` (generalized), frontend Agent Trace panel (extended for per-node/per-loop rendering).
+**Reused as-is:** `call_with_fallback`/httpx client, chunking (`chunking.py`, reused for LanceDB records too), FastAPI endpoint pattern, `compute_regression_metrics`/`compute_tier_metrics`, `check_rationale_faithfulness` (generalized), frontend Agent Trace panel (extended for per-node/per-loop rendering). Note: `src/rag/hybrid_store.py` (ChromaDB+BM25+RRF) stays as-is for the Extraversion-era `/predict-agent` pipeline (Plans 1-6, unaffected by this revision) but is **not** reused by the EQ pivot past Plan 2 — see Revision section.
 
-**Rebuilt:** `orchestrator.py` → LangGraph `StateGraph` definition with specialist/coordinator/critic nodes; `tool_schemas.py` → per-branch tool sets; `tiers.py` → new EQ tier scheme; RAG corpus content (theory + exemplars); `run_comparison.py`'s ablation variants → per-specialist and critique-loop ablations.
+**Rebuilt:** `orchestrator.py` → LangGraph `StateGraph` definition with specialist/coordinator/critic nodes (done, Plan 2); `tool_schemas.py` → per-branch tool sets (Plan 3, being revised to target LanceDB); `tiers.py` → new EQ tier scheme (done, Plan 1); RAG corpus content (theory + exemplars, done Plan 1, storage engine revised); `run_comparison.py`'s ablation variants → per-specialist, critique-loop, and reranking ablations.
 
-**New dependency:** `langgraph` (+ its `langchain-core` requirement). Explicitly NOT added: `langchain-deepseek`, `langchain-openai` (avoids the reasoning_content bug — see Architecture section).
+**New dependencies:** `langgraph` (+ its `langchain-core` requirement, done Plan 2); `lancedb` (replacing `chromadb`+`rank-bm25` for the EQ pivot only); a cross-encoder model via the already-present `sentence-transformers`; `neo4j` Python driver (+ a running Neo4j instance); `langsmith` (+ API key, no new infra). Explicitly NOT added: `langchain-deepseek`, `langchain-openai` (avoids the reasoning_content bug — see Architecture section); the full OpenTelemetry stack, generic multi-format document loaders (PDF/DOCX/website/YouTube/OCR), auth/rate-limiting/API-gateway layers, Postgres/Redis/S3 as additional stores (all explicitly declined as disproportionate to this project's scope — see Revision section).
 
 ## Out of Scope for This Spec
 
