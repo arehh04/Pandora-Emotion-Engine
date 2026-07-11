@@ -1,0 +1,752 @@
+{
+  "summary": {
+    "llm_only": {
+      "rmse": 32.11126489774785,
+      "mae": 29.0,
+      "r2": 0.06507652506105077,
+      "accuracy": 0.06666666666666667,
+      "macro_f1": 0.05,
+      "weighted_kappa": 0.02941176470588225,
+      "confusion_matrix": [
+        [
+          0,
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          2,
+          0
+        ]
+      ],
+      "faithfulness_rate": 1.0
+    },
+    "llm_fuzzy": {
+      "rmse": 37.46287050756611,
+      "mae": 29.866666666666667,
+      "r2": -0.27251626006431495,
+      "accuracy": 0.13333333333333333,
+      "macro_f1": 0.05333333333333333,
+      "weighted_kappa": -0.03603603603603589,
+      "confusion_matrix": [
+        [
+          0,
+          3,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          3,
+          0,
+          1,
+          0
+        ]
+      ],
+      "faithfulness_rate": 1.0
+    },
+    "llm_fuzzy_ml": {
+      "rmse": 35.874782229304195,
+      "mae": 29.533333333333335,
+      "r2": -0.1669165115210718,
+      "accuracy": 0.13333333333333333,
+      "macro_f1": 0.05333333333333333,
+      "weighted_kappa": 0.0,
+      "confusion_matrix": [
+        [
+          0,
+          3,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          3,
+          0,
+          1,
+          0
+        ]
+      ],
+      "faithfulness_rate": 1.0
+    },
+    "llm_full": {
+      "rmse": 35.2486406357276,
+      "mae": 29.4,
+      "r2": -0.12653835924466272,
+      "accuracy": 0.06666666666666667,
+      "macro_f1": 0.02857142857142857,
+      "weighted_kappa": -0.1042944785276072,
+      "confusion_matrix": [
+        [
+          0,
+          3,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          3,
+          1,
+          0,
+          0
+        ]
+      ],
+      "faithfulness_rate": 1.0
+    },
+    "_historical_baselines": {
+      "ridge": {
+        "rmse": 29.18,
+        "r2": 0.103
+      },
+      "xgboost": {
+        "rmse": 28.29,
+        "r2": 0.158
+      },
+      "random_forest": {
+        "rmse": 28.22,
+        "r2": 0.162
+      }
+    }
+  },
+  "raw_results": {
+    "llm_only": [
+      {
+        "text": "oh ok then i must have misunderstood you yeah i agree they should do more research on that",
+        "true_score": 46.0,
+        "true_tier": 4,
+        "predicted_score": 25.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "warning long rantanonymity frees people from direct consequenceyou see it and joke about it in online games as well as in more overtly social settings this is why youtube eventually pushed to use your real name as accountability for identity decreases unsavory comments it doesnt eliminate them of course just decreases themso here we are on reddit where everyone can speak their mind behind any number of faceless usernames throwaway accounts are not only acceptable but encouraged with very little effort you can make up creepythrowaway0315 and go harass someone until they block you and you have to put together creepythrowaway0316 hell you can even play both sides of the fence and have whiteknight0401 swoop in with a sympathetic comment and staged comforthow can we trust anyone when everyones identities are interchangeable and everyones motivations are suspect how can we expect to feel safe discussing our most intimate thoughts with strangers and not provoke negative attention well we cant this whole anonymity thing works two ways we get the chance to be our most honest selves here if we want or we can pretend to be someone else this masquerade ball is both freeing and dangerousive never used a throwaway here ive posted photos of myself along the way you could dox me fairly easily and if someone in my personal life were to pay even a little bit of attention they could easily figure out who i am it probably wouldnt take much for a total stranger to figure out my name and location at this pointbut im a guy historically its assumed that id be the predator for that matter i even fit the statistical profile of being a serial killer since im also white and in the right age range and so on im protected from the monsters because its easily assumed im a monster toothe women here and the subs and the subs who are also women theyre tremendously brave because classically they represent prey they develop an understandable siege mentality while they try to use this site as well as dating sites because for them its like trying to get grocery shopping done when the store is full of hungry lionsi occasionally get grief for defending these folks im accused of being an aforementioned white knight who wears a fedoratrilby and calls himself a nice guy ironically those accusations come from an assumption that im a different kind of predator one who pretends to be valiant and sweet but is still just as dastardly as a wolf without sheeps clothing i say its even more reprehensible due to the extra layer of manipulative deceptionis it unfair to assume that im a bad guy either openly or secretly fuck yes it is i didnt earn that reputation my gender did im lumped in with the mass of desperately horny apes at keyboards across the globe by merit of being a testosteronebased lifeformright so here we are then after all of that women and subs are scared while men and doms are demonized all because there are pathetic assholes out there making the internet annoying for everyonethe difference between problemsolving and whining is if you have a solution to propose or not and i certainly have a proposition its a threeparter but straightforward1 if you feel like prey walk away the cool thing about the internet is that you can ignore people instantly dont fuel their stupidity by responding at all click poof done2 remember who you actually are would any two strangers in real life have a successful conversation that opened with ayy baby want some fuck if you think thatd work out are you seriously that badass or that laughably desperate3 dont shit where you sleep if you want to be part of an online community thats great contribute to it make it better let it grow so itll be more useful to you if you just make other people hate using it then youre basically pissing in your own soup pretty sure you dont want to do thatalright my rants over odds are im only preaching to the choir here i know sermons rarely convert sinners but they do bolster the morale of the righteous and thats a good thing tootldr idiots are dumb dont be an idiot",
+        "true_score": 15.0,
+        "true_tier": 2,
+        "predicted_score": 25.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "for the record i started on cod4i liked it but liked waw way moretoo bad that game got unplayable online due to the god mode hacks",
+        "true_score": 12.0,
+        "true_tier": 2,
+        "predicted_score": 40.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "lol could be either type hmm gonna start a thread",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 45.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "amazingly though i got flamed by mad germans for being a cheater every damn time below supreme for things that are pretty normalmost are just shit and cant accept that they are shit because they are lem and are better than 95 of cs players lel",
+        "true_score": 12.0,
+        "true_tier": 2,
+        "predicted_score": 68.0,
+        "predicted_tier": 4,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "with untouchable you are straight up unkillable if the enemys safelane and supports dont have large burst damage you can freely harass and farm the lane and disrupt the lane a crazy amount abbadon offlane is somewhat similar",
+        "true_score": 5.0,
+        "true_tier": 1,
+        "predicted_score": 20.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "your own hindmilk express a few drops rub it in and allow to airdry i tried lansinoh for a week and it did nothing for my sore nipples but my own hindmilk fixed it overnight",
+        "true_score": 0.0,
+        "true_tier": 1,
+        "predicted_score": 45.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "remember its offensive to use the word black as in black hole next on rotation after african american will surely be negroidamerican round and round we go",
+        "true_score": 0.0,
+        "true_tier": 1,
+        "predicted_score": 40.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "translation herp durr if that person does something shitty its ok if the other person does something shitty derp",
+        "true_score": 27.0,
+        "true_tier": 3,
+        "predicted_score": 55.0,
+        "predicted_tier": 4,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "whats the aerial shot look like",
+        "true_score": 27.0,
+        "true_tier": 3,
+        "predicted_score": 20.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "ok so if you arent sure how you feel you want someone youre dating to talk to you about their schmoopy lovey feelings with you greater than 25 of the time",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 62.0,
+        "predicted_tier": 4,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "and before newton the tools were available for hundreds of years before that to get to newton this shit takes time my point i believe stands d",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 48.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "also ashes w will proc her slow so her autos on wd things do extra damage",
+        "true_score": 60.0,
+        "true_tier": 4,
+        "predicted_score": 15.0,
+        "predicted_tier": 1,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "these links may be helpful",
+        "true_score": 5.0,
+        "true_tier": 1,
+        "predicted_score": 25.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "i like the cut of your jib lets plan on mid june or so that will give me time to perfect my technique for soy quesadillas prepared with an iron what should we spend our first million on war orphans or feminism",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 65.0,
+        "predicted_tier": 4,
+        "faithful": true,
+        "degraded": false
+      }
+    ],
+    "llm_fuzzy": [
+      {
+        "text": "oh ok then i must have misunderstood you yeah i agree they should do more research on that",
+        "true_score": 46.0,
+        "true_tier": 4,
+        "predicted_score": 13.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "warning long rantanonymity frees people from direct consequenceyou see it and joke about it in online games as well as in more overtly social settings this is why youtube eventually pushed to use your real name as accountability for identity decreases unsavory comments it doesnt eliminate them of course just decreases themso here we are on reddit where everyone can speak their mind behind any number of faceless usernames throwaway accounts are not only acceptable but encouraged with very little effort you can make up creepythrowaway0315 and go harass someone until they block you and you have to put together creepythrowaway0316 hell you can even play both sides of the fence and have whiteknight0401 swoop in with a sympathetic comment and staged comforthow can we trust anyone when everyones identities are interchangeable and everyones motivations are suspect how can we expect to feel safe discussing our most intimate thoughts with strangers and not provoke negative attention well we cant this whole anonymity thing works two ways we get the chance to be our most honest selves here if we want or we can pretend to be someone else this masquerade ball is both freeing and dangerousive never used a throwaway here ive posted photos of myself along the way you could dox me fairly easily and if someone in my personal life were to pay even a little bit of attention they could easily figure out who i am it probably wouldnt take much for a total stranger to figure out my name and location at this pointbut im a guy historically its assumed that id be the predator for that matter i even fit the statistical profile of being a serial killer since im also white and in the right age range and so on im protected from the monsters because its easily assumed im a monster toothe women here and the subs and the subs who are also women theyre tremendously brave because classically they represent prey they develop an understandable siege mentality while they try to use this site as well as dating sites because for them its like trying to get grocery shopping done when the store is full of hungry lionsi occasionally get grief for defending these folks im accused of being an aforementioned white knight who wears a fedoratrilby and calls himself a nice guy ironically those accusations come from an assumption that im a different kind of predator one who pretends to be valiant and sweet but is still just as dastardly as a wolf without sheeps clothing i say its even more reprehensible due to the extra layer of manipulative deceptionis it unfair to assume that im a bad guy either openly or secretly fuck yes it is i didnt earn that reputation my gender did im lumped in with the mass of desperately horny apes at keyboards across the globe by merit of being a testosteronebased lifeformright so here we are then after all of that women and subs are scared while men and doms are demonized all because there are pathetic assholes out there making the internet annoying for everyonethe difference between problemsolving and whining is if you have a solution to propose or not and i certainly have a proposition its a threeparter but straightforward1 if you feel like prey walk away the cool thing about the internet is that you can ignore people instantly dont fuel their stupidity by responding at all click poof done2 remember who you actually are would any two strangers in real life have a successful conversation that opened with ayy baby want some fuck if you think thatd work out are you seriously that badass or that laughably desperate3 dont shit where you sleep if you want to be part of an online community thats great contribute to it make it better let it grow so itll be more useful to you if you just make other people hate using it then youre basically pissing in your own soup pretty sure you dont want to do thatalright my rants over odds are im only preaching to the choir here i know sermons rarely convert sinners but they do bolster the morale of the righteous and thats a good thing tootldr idiots are dumb dont be an idiot",
+        "true_score": 15.0,
+        "true_tier": 2,
+        "predicted_score": 30.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "for the record i started on cod4i liked it but liked waw way moretoo bad that game got unplayable online due to the god mode hacks",
+        "true_score": 12.0,
+        "true_tier": 2,
+        "predicted_score": 15.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "lol could be either type hmm gonna start a thread",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 20.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "amazingly though i got flamed by mad germans for being a cheater every damn time below supreme for things that are pretty normalmost are just shit and cant accept that they are shit because they are lem and are better than 95 of cs players lel",
+        "true_score": 12.0,
+        "true_tier": 2,
+        "predicted_score": 18.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "with untouchable you are straight up unkillable if the enemys safelane and supports dont have large burst damage you can freely harass and farm the lane and disrupt the lane a crazy amount abbadon offlane is somewhat similar",
+        "true_score": 5.0,
+        "true_tier": 1,
+        "predicted_score": 13.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "your own hindmilk express a few drops rub it in and allow to airdry i tried lansinoh for a week and it did nothing for my sore nipples but my own hindmilk fixed it overnight",
+        "true_score": 0.0,
+        "true_tier": 1,
+        "predicted_score": 13.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "remember its offensive to use the word black as in black hole next on rotation after african american will surely be negroidamerican round and round we go",
+        "true_score": 0.0,
+        "true_tier": 1,
+        "predicted_score": 55.0,
+        "predicted_tier": 4,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "translation herp durr if that person does something shitty its ok if the other person does something shitty derp",
+        "true_score": 27.0,
+        "true_tier": 3,
+        "predicted_score": 13.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "whats the aerial shot look like",
+        "true_score": 27.0,
+        "true_tier": 3,
+        "predicted_score": 14.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "ok so if you arent sure how you feel you want someone youre dating to talk to you about their schmoopy lovey feelings with you greater than 25 of the time",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 24.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "and before newton the tools were available for hundreds of years before that to get to newton this shit takes time my point i believe stands d",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 14.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "also ashes w will proc her slow so her autos on wd things do extra damage",
+        "true_score": 60.0,
+        "true_tier": 4,
+        "predicted_score": 15.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "these links may be helpful",
+        "true_score": 5.0,
+        "true_tier": 1,
+        "predicted_score": 28.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "i like the cut of your jib lets plan on mid june or so that will give me time to perfect my technique for soy quesadillas prepared with an iron what should we spend our first million on war orphans or feminism",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 62.0,
+        "predicted_tier": 4,
+        "faithful": true,
+        "degraded": false
+      }
+    ],
+    "llm_fuzzy_ml": [
+      {
+        "text": "oh ok then i must have misunderstood you yeah i agree they should do more research on that",
+        "true_score": 46.0,
+        "true_tier": 4,
+        "predicted_score": 22.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "warning long rantanonymity frees people from direct consequenceyou see it and joke about it in online games as well as in more overtly social settings this is why youtube eventually pushed to use your real name as accountability for identity decreases unsavory comments it doesnt eliminate them of course just decreases themso here we are on reddit where everyone can speak their mind behind any number of faceless usernames throwaway accounts are not only acceptable but encouraged with very little effort you can make up creepythrowaway0315 and go harass someone until they block you and you have to put together creepythrowaway0316 hell you can even play both sides of the fence and have whiteknight0401 swoop in with a sympathetic comment and staged comforthow can we trust anyone when everyones identities are interchangeable and everyones motivations are suspect how can we expect to feel safe discussing our most intimate thoughts with strangers and not provoke negative attention well we cant this whole anonymity thing works two ways we get the chance to be our most honest selves here if we want or we can pretend to be someone else this masquerade ball is both freeing and dangerousive never used a throwaway here ive posted photos of myself along the way you could dox me fairly easily and if someone in my personal life were to pay even a little bit of attention they could easily figure out who i am it probably wouldnt take much for a total stranger to figure out my name and location at this pointbut im a guy historically its assumed that id be the predator for that matter i even fit the statistical profile of being a serial killer since im also white and in the right age range and so on im protected from the monsters because its easily assumed im a monster toothe women here and the subs and the subs who are also women theyre tremendously brave because classically they represent prey they develop an understandable siege mentality while they try to use this site as well as dating sites because for them its like trying to get grocery shopping done when the store is full of hungry lionsi occasionally get grief for defending these folks im accused of being an aforementioned white knight who wears a fedoratrilby and calls himself a nice guy ironically those accusations come from an assumption that im a different kind of predator one who pretends to be valiant and sweet but is still just as dastardly as a wolf without sheeps clothing i say its even more reprehensible due to the extra layer of manipulative deceptionis it unfair to assume that im a bad guy either openly or secretly fuck yes it is i didnt earn that reputation my gender did im lumped in with the mass of desperately horny apes at keyboards across the globe by merit of being a testosteronebased lifeformright so here we are then after all of that women and subs are scared while men and doms are demonized all because there are pathetic assholes out there making the internet annoying for everyonethe difference between problemsolving and whining is if you have a solution to propose or not and i certainly have a proposition its a threeparter but straightforward1 if you feel like prey walk away the cool thing about the internet is that you can ignore people instantly dont fuel their stupidity by responding at all click poof done2 remember who you actually are would any two strangers in real life have a successful conversation that opened with ayy baby want some fuck if you think thatd work out are you seriously that badass or that laughably desperate3 dont shit where you sleep if you want to be part of an online community thats great contribute to it make it better let it grow so itll be more useful to you if you just make other people hate using it then youre basically pissing in your own soup pretty sure you dont want to do thatalright my rants over odds are im only preaching to the choir here i know sermons rarely convert sinners but they do bolster the morale of the righteous and thats a good thing tootldr idiots are dumb dont be an idiot",
+        "true_score": 15.0,
+        "true_tier": 2,
+        "predicted_score": 31.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "for the record i started on cod4i liked it but liked waw way moretoo bad that game got unplayable online due to the god mode hacks",
+        "true_score": 12.0,
+        "true_tier": 2,
+        "predicted_score": 30.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "lol could be either type hmm gonna start a thread",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 15.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "amazingly though i got flamed by mad germans for being a cheater every damn time below supreme for things that are pretty normalmost are just shit and cant accept that they are shit because they are lem and are better than 95 of cs players lel",
+        "true_score": 12.0,
+        "true_tier": 2,
+        "predicted_score": 18.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "with untouchable you are straight up unkillable if the enemys safelane and supports dont have large burst damage you can freely harass and farm the lane and disrupt the lane a crazy amount abbadon offlane is somewhat similar",
+        "true_score": 5.0,
+        "true_tier": 1,
+        "predicted_score": 25.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "your own hindmilk express a few drops rub it in and allow to airdry i tried lansinoh for a week and it did nothing for my sore nipples but my own hindmilk fixed it overnight",
+        "true_score": 0.0,
+        "true_tier": 1,
+        "predicted_score": 22.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "remember its offensive to use the word black as in black hole next on rotation after african american will surely be negroidamerican round and round we go",
+        "true_score": 0.0,
+        "true_tier": 1,
+        "predicted_score": 35.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "translation herp durr if that person does something shitty its ok if the other person does something shitty derp",
+        "true_score": 27.0,
+        "true_tier": 3,
+        "predicted_score": 22.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "whats the aerial shot look like",
+        "true_score": 27.0,
+        "true_tier": 3,
+        "predicted_score": 23.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "ok so if you arent sure how you feel you want someone youre dating to talk to you about their schmoopy lovey feelings with you greater than 25 of the time",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 25.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "and before newton the tools were available for hundreds of years before that to get to newton this shit takes time my point i believe stands d",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 22.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "also ashes w will proc her slow so her autos on wd things do extra damage",
+        "true_score": 60.0,
+        "true_tier": 4,
+        "predicted_score": 22.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "these links may be helpful",
+        "true_score": 5.0,
+        "true_tier": 1,
+        "predicted_score": 28.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "i like the cut of your jib lets plan on mid june or so that will give me time to perfect my technique for soy quesadillas prepared with an iron what should we spend our first million on war orphans or feminism",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 46.0,
+        "predicted_tier": 4,
+        "faithful": true,
+        "degraded": false
+      }
+    ],
+    "llm_full": [
+      {
+        "text": "oh ok then i must have misunderstood you yeah i agree they should do more research on that",
+        "true_score": 46.0,
+        "true_tier": 4,
+        "predicted_score": 22.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "warning long rantanonymity frees people from direct consequenceyou see it and joke about it in online games as well as in more overtly social settings this is why youtube eventually pushed to use your real name as accountability for identity decreases unsavory comments it doesnt eliminate them of course just decreases themso here we are on reddit where everyone can speak their mind behind any number of faceless usernames throwaway accounts are not only acceptable but encouraged with very little effort you can make up creepythrowaway0315 and go harass someone until they block you and you have to put together creepythrowaway0316 hell you can even play both sides of the fence and have whiteknight0401 swoop in with a sympathetic comment and staged comforthow can we trust anyone when everyones identities are interchangeable and everyones motivations are suspect how can we expect to feel safe discussing our most intimate thoughts with strangers and not provoke negative attention well we cant this whole anonymity thing works two ways we get the chance to be our most honest selves here if we want or we can pretend to be someone else this masquerade ball is both freeing and dangerousive never used a throwaway here ive posted photos of myself along the way you could dox me fairly easily and if someone in my personal life were to pay even a little bit of attention they could easily figure out who i am it probably wouldnt take much for a total stranger to figure out my name and location at this pointbut im a guy historically its assumed that id be the predator for that matter i even fit the statistical profile of being a serial killer since im also white and in the right age range and so on im protected from the monsters because its easily assumed im a monster toothe women here and the subs and the subs who are also women theyre tremendously brave because classically they represent prey they develop an understandable siege mentality while they try to use this site as well as dating sites because for them its like trying to get grocery shopping done when the store is full of hungry lionsi occasionally get grief for defending these folks im accused of being an aforementioned white knight who wears a fedoratrilby and calls himself a nice guy ironically those accusations come from an assumption that im a different kind of predator one who pretends to be valiant and sweet but is still just as dastardly as a wolf without sheeps clothing i say its even more reprehensible due to the extra layer of manipulative deceptionis it unfair to assume that im a bad guy either openly or secretly fuck yes it is i didnt earn that reputation my gender did im lumped in with the mass of desperately horny apes at keyboards across the globe by merit of being a testosteronebased lifeformright so here we are then after all of that women and subs are scared while men and doms are demonized all because there are pathetic assholes out there making the internet annoying for everyonethe difference between problemsolving and whining is if you have a solution to propose or not and i certainly have a proposition its a threeparter but straightforward1 if you feel like prey walk away the cool thing about the internet is that you can ignore people instantly dont fuel their stupidity by responding at all click poof done2 remember who you actually are would any two strangers in real life have a successful conversation that opened with ayy baby want some fuck if you think thatd work out are you seriously that badass or that laughably desperate3 dont shit where you sleep if you want to be part of an online community thats great contribute to it make it better let it grow so itll be more useful to you if you just make other people hate using it then youre basically pissing in your own soup pretty sure you dont want to do thatalright my rants over odds are im only preaching to the choir here i know sermons rarely convert sinners but they do bolster the morale of the righteous and thats a good thing tootldr idiots are dumb dont be an idiot",
+        "true_score": 15.0,
+        "true_tier": 2,
+        "predicted_score": 30.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "for the record i started on cod4i liked it but liked waw way moretoo bad that game got unplayable online due to the god mode hacks",
+        "true_score": 12.0,
+        "true_tier": 2,
+        "predicted_score": 22.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "lol could be either type hmm gonna start a thread",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 25.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "amazingly though i got flamed by mad germans for being a cheater every damn time below supreme for things that are pretty normalmost are just shit and cant accept that they are shit because they are lem and are better than 95 of cs players lel",
+        "true_score": 12.0,
+        "true_tier": 2,
+        "predicted_score": 28.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "with untouchable you are straight up unkillable if the enemys safelane and supports dont have large burst damage you can freely harass and farm the lane and disrupt the lane a crazy amount abbadon offlane is somewhat similar",
+        "true_score": 5.0,
+        "true_tier": 1,
+        "predicted_score": 22.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "your own hindmilk express a few drops rub it in and allow to airdry i tried lansinoh for a week and it did nothing for my sore nipples but my own hindmilk fixed it overnight",
+        "true_score": 0.0,
+        "true_tier": 1,
+        "predicted_score": 25.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "remember its offensive to use the word black as in black hole next on rotation after african american will surely be negroidamerican round and round we go",
+        "true_score": 0.0,
+        "true_tier": 1,
+        "predicted_score": 37.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "translation herp durr if that person does something shitty its ok if the other person does something shitty derp",
+        "true_score": 27.0,
+        "true_tier": 3,
+        "predicted_score": 25.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "whats the aerial shot look like",
+        "true_score": 27.0,
+        "true_tier": 3,
+        "predicted_score": 22.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "ok so if you arent sure how you feel you want someone youre dating to talk to you about their schmoopy lovey feelings with you greater than 25 of the time",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 30.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "and before newton the tools were available for hundreds of years before that to get to newton this shit takes time my point i believe stands d",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 20.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "also ashes w will proc her slow so her autos on wd things do extra damage",
+        "true_score": 60.0,
+        "true_tier": 4,
+        "predicted_score": 18.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "these links may be helpful",
+        "true_score": 5.0,
+        "true_tier": 1,
+        "predicted_score": 28.0,
+        "predicted_tier": 2,
+        "faithful": true,
+        "degraded": false
+      },
+      {
+        "text": "i like the cut of your jib lets plan on mid june or so that will give me time to perfect my technique for soy quesadillas prepared with an iron what should we spend our first million on war orphans or feminism",
+        "true_score": 85.0,
+        "true_tier": 5,
+        "predicted_score": 40.0,
+        "predicted_tier": 3,
+        "faithful": true,
+        "degraded": false
+      }
+    ]
+  }
+}
