@@ -35,3 +35,22 @@ def build_msc_knowledge_graph(driver, theory_entries, branch_dependencies=None):
                 "CREATE (a)-[:DEPENDS_ON]->(b)",
                 dependent=dependent, dependency=dependency,
             )
+
+
+def get_concepts_for_branch(driver, branch):
+    with driver.session() as session:
+        result = session.run(
+            "MATCH (c:Concept)-[:BELONGS_TO]->(:Branch {name: $branch}) "
+            "RETURN c.id AS id, c.topic AS topic, c.text AS text",
+            branch=branch,
+        )
+        return [{"id": r["id"], "topic": r["topic"], "text": r["text"]} for r in result]
+
+
+def get_branch_dependencies(driver, branch):
+    with driver.session() as session:
+        result = session.run(
+            "MATCH (:Branch {name: $branch})-[:DEPENDS_ON]->(dep:Branch) RETURN dep.name AS name",
+            branch=branch,
+        )
+        return [r["name"] for r in result]
