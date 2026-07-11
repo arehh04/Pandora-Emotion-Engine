@@ -22,20 +22,20 @@ def _fake_predict_fn(text, enabled_tools):
     else:
         tier = 6
     trace = [] if enabled_tools == set() else [
-        {"tool": "fuzzy_logic_assessment", "arguments": {"text": text},
-         "result": {"fuzzy_score": score, "tier": tier, "tier_label": "x", "fired_rules": []}},
+        {"tool": "retrieve_similar_exemplars", "arguments": {"text": text},
+         "result": {"results": [{"bert_text": text, "score": 0.5}]}},
     ]
     return {
         "tier": tier, "tier_label": "x", "continuous_score_estimate": score,
-        "confidence": "medium", "rationale": f"Fuzzy logic assessment gave tier {tier}.",
+        "confidence": "medium", "rationale": f"retrieve_similar_exemplars grounded this at tier {tier}.",
         "trace": trace, "degraded": False, "error": None,
     }
 
 
-def test_ablation_variants_cover_the_four_expected_configurations():
-    assert set(ABLATION_VARIANTS.keys()) == {"llm_only", "llm_fuzzy", "llm_fuzzy_ml", "llm_full"}
+def test_ablation_variants_cover_the_two_expected_configurations():
+    assert set(ABLATION_VARIANTS.keys()) == {"llm_only", "llm_rag"}
     assert ABLATION_VARIANTS["llm_only"] == set()
-    assert ABLATION_VARIANTS["llm_full"] is None
+    assert ABLATION_VARIANTS["llm_rag"] is None
 
 
 def test_historical_baselines_include_all_three_classical_models():
@@ -46,22 +46,22 @@ def test_historical_baselines_include_all_three_classical_models():
 
 def test_run_evaluation_produces_one_row_per_sample_per_variant():
     samples = [("short", 5.0), ("a much longer piece of text here", 90.0)]
-    variants = {"llm_only": set(), "llm_full": None}
+    variants = {"llm_only": set(), "llm_rag": None}
 
     results = run_evaluation(_fake_predict_fn, samples, variants)
 
-    assert set(results.keys()) == {"llm_only", "llm_full"}
+    assert set(results.keys()) == {"llm_only", "llm_rag"}
     assert len(results["llm_only"]) == 2
-    assert len(results["llm_full"]) == 2
+    assert len(results["llm_rag"]) == 2
     assert results["llm_only"][0]["text"] == "short"
     assert results["llm_only"][0]["true_score"] == 5.0
     assert "predicted_tier" in results["llm_only"][0]
-    assert "faithful" in results["llm_full"][0]
+    assert "faithful" in results["llm_rag"][0]
 
 
 def test_summarize_evaluation_includes_metrics_and_historical_baselines():
     samples = [("short", 5.0), ("a much longer piece of text here", 90.0)]
-    variants = {"llm_only": set(), "llm_full": None}
+    variants = {"llm_only": set(), "llm_rag": None}
     results = run_evaluation(_fake_predict_fn, samples, variants)
 
     summary = summarize_evaluation(results)

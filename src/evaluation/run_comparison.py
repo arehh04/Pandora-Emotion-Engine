@@ -1,7 +1,7 @@
-"""Ablation/comparison harness: runs the LLM-only -> LLM+Fuzzy ->
-LLM+Fuzzy+ML -> full-agent variants over a text sample and produces
-continuous + tiered metrics for each, alongside the historical classical-ML
-baselines recorded in docs/thesis/Chapter4_Results_Interpretability.md.
+"""Ablation/comparison harness: runs the LLM-only -> LLM+RAG variants over a
+text sample and produces continuous + tiered metrics for each, alongside the
+historical classical-ML baselines recorded in
+docs/thesis/Chapter4_Results_Interpretability.md.
 
 The real (non-mocked) run is a separate, manual, explicitly deferred script
 invocation -- see the module docstring in scripts using make_run_agent_predict_fn.
@@ -14,9 +14,7 @@ from src.tiers import assign_tier
 
 ABLATION_VARIANTS = {
     "llm_only": set(),
-    "llm_fuzzy": {"fuzzy_logic_assessment"},
-    "llm_fuzzy_ml": {"fuzzy_logic_assessment", "ml_prior_assessment"},
-    "llm_full": None,
+    "llm_rag": None,
 }
 
 # Sourced from docs/thesis/Chapter4_Results_Interpretability.md's existing

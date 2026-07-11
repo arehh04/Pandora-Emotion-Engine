@@ -1,39 +1,18 @@
-import os
-
 import httpx
-import spacy
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 import backend.agent_router as agent_router_module
 from backend.agent_router import (
-    router,
-    get_agent_context,
-    get_agent_client_and_models,
     _build_deepseek_config,
     _build_openrouter_config,
+    get_agent_client_and_models,
+    get_agent_context,
+    router,
 )
 from src.agent.openrouter_client import DEEPSEEK_BASE_URL, OPENROUTER_BASE_URL, build_client
-from src.agent.tools.classical_features import load_nrc_lexicon
-from src.agent.tools.ml_prior import train_ml_prior
 
-
-def _build_test_ctx():
-    nlp = spacy.load("en_core_web_sm")
-    nrc_dict = load_nrc_lexicon(os.path.join("data", "NRC-Emotion-Lexicon-Senselevel-v0.92.txt"))
-    feature_rows = [
-        {"positive": 0.3, "negative": 0.0, "semantic_polarity": 0.9, "behav_exclamation_ratio": 0.2,
-         "behav_question_ratio": 0.0, "behav_verb_ratio": 0.3, "behav_1st_sg_pronoun_ratio": 0.0,
-         "behav_1st_pl_pronoun_ratio": 0.2},
-        {"positive": 0.0, "negative": 0.3, "semantic_polarity": -0.9, "behav_exclamation_ratio": 0.0,
-         "behav_question_ratio": 0.0, "behav_verb_ratio": 0.05, "behav_1st_sg_pronoun_ratio": 0.2,
-         "behav_1st_pl_pronoun_ratio": 0.0},
-    ]
-    ml_model = train_ml_prior(feature_rows, [90.0, 10.0])
-    return {"nlp": nlp, "nrc_dict": nrc_dict, "ml_model": ml_model, "rag": None}
-
-
-_TEST_CTX = _build_test_ctx()
+_TEST_CTX = {"rag": None}
 
 
 def _make_test_app():

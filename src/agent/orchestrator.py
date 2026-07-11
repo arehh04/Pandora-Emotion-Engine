@@ -1,25 +1,24 @@
-"""The agent's ReAct-style orchestration loop: calls an OpenRouter model with
-tool-calling enabled, dispatches whichever tools it chooses, and terminates
-when it calls submit_assessment. Falls back to the ML-prior tool directly
-if the OpenRouter call fails outright after retrying across all configured
-fallback models.
+"""The agent's ReAct-style orchestration loop: calls an LLM with tool-calling
+enabled, dispatches whichever RAG tools it chooses, and terminates when it
+calls submit_assessment. Degrades to a neutral default if the LLM call
+fails, the response is malformed, or max_iterations is exhausted without a
+submit_assessment call.
 """
 import json
 
 from src.agent.openrouter_client import call_with_fallback
 from src.agent.tool_schemas import TOOL_SCHEMAS, dispatch_tool_call
-from src.agent.tools.ml_prior import predict_ml_prior
 from src.tiers import TIER_BINS
 
 SYSTEM_PROMPT = (
     "You are an assessment agent estimating the Extraversion of a piece of text "
     "on a 1 (most reserved) to 6 (most extraverted) tier scale. You have tools "
-    "available to gather evidence: a fuzzy-logic signal-fusion assessment, a "
-    "small trained ML model, and retrieval of similar labeled examples and "
-    "relevant psychology theory. Use as many tools as you find useful, then "
-    "call submit_assessment exactly once with your final tier, a 0-99 "
-    "continuous score estimate, your confidence, and a brief rationale citing "
-    "the evidence you gathered."
+    "available to gather evidence: retrieval of similar labeled examples and "
+    "retrieval of relevant Extraversion/Big Five psychology theory from a "
+    "knowledge base. Use as many tool calls as you find useful, then call "
+    "submit_assessment exactly once with your final tier, a 0-99 continuous "
+    "score estimate, your confidence, and a brief rationale citing the "
+    "evidence you gathered."
 )
 
 
@@ -31,29 +30,16 @@ def label_for_tier(tier_num):
 
 
 def _degraded_result(text, ctx, error):
-    try:
-        prior = predict_ml_prior(text, ctx["nlp"], ctx["nrc_dict"], ctx["ml_model"])
-        return {
-            "tier": prior["tier"],
-            "tier_label": prior["tier_label"],
-            "continuous_score_estimate": prior["score"],
-            "confidence": "low",
-            "rationale": "Agent unavailable; falling back to the ML-prior tool directly.",
-            "trace": [],
-            "degraded": True,
-            "error": error,
-        }
-    except Exception as fallback_error:
-        return {
-            "tier": 4,
-            "tier_label": label_for_tier(4),
-            "continuous_score_estimate": 50.0,
-            "confidence": "low",
-            "rationale": "Both the agent and the ML-prior fallback failed; returning a neutral default.",
-            "trace": [],
-            "degraded": True,
-            "error": f"{error} | fallback also failed: {fallback_error}",
-        }
+    return {
+        "tier": 4,
+        "tier_label": label_for_tier(4),
+        "continuous_score_estimate": 50.0,
+        "confidence": "low",
+        "rationale": "The agent could not complete the assessment; returning a neutral default.",
+        "trace": [],
+        "degraded": True,
+        "error": error,
+    }
 
 
 def run_agent(client, models, ctx, text, max_iterations=6, extra_params=None, enabled_tools=None):
