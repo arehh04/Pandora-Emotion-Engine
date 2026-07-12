@@ -21,6 +21,7 @@ from src.extract_classical_features import compute_linguistic_features, compute_
 from src.models.bert_regressor import BertRegressorModel
 from src.explainability.shap_bert_tokens import explain_text
 from backend.agent_router import router as agent_router
+from backend.eq_router import router as eq_router
 
 app = FastAPI(title="Pandora API")
 
@@ -32,6 +33,7 @@ app.add_middleware(
 )
 
 app.include_router(agent_router)
+app.include_router(eq_router)
 
 class PredictRequest(BaseModel):
     text: str
